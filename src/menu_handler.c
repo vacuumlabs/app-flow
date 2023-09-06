@@ -19,13 +19,15 @@ void handleMenuShowAddress() {
     loadHdPathAndAddressFromSlot();
 
     if (show_address == SHOW_ADDRESS_YES) {
-        //extract pubkey to pubkey_to_display global variable
+        // extract pubkey to pubkey_to_display global variable
         MEMZERO(pubkey_to_display, sizeof(pubkey_to_display));
-        zxerr_t err = crypto_extractPublicKey(hdPath, cryptoOptions, pubkey_to_display, sizeof(pubkey_to_display));
-        if (err ==  zxerr_ok) {
+        zxerr_t err = crypto_extractPublicKey(hdPath,
+                                              cryptoOptions,
+                                              pubkey_to_display,
+                                              sizeof(pubkey_to_display));
+        if (err == zxerr_ok) {
             hasPubkey = true;
-        }
-        else {
+        } else {
             zemu_log_stack("Public key extraction error.");
         }
     }

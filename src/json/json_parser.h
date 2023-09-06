@@ -1,18 +1,18 @@
 /*******************************************************************************
-*   (c) 2018-2020 Zondax GmbH
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   (c) 2018-2020 Zondax GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 
 #pragma once
 
@@ -26,17 +26,15 @@
 extern "C" {
 #endif
 
-#if defined(LEDGER_SPECIFIC)
 #include "bolos_target.h"
-#endif
 
 /// Max number of accepted tokens in the JSON input
-#define MAX_NUMBER_OF_TOKENS   256
+#define MAX_NUMBER_OF_TOKENS 256
 
 // we must limit the number
 #if defined(TARGET_NANOS)
 #undef MAX_NUMBER_OF_TOKENS
-#define MAX_NUMBER_OF_TOKENS    128
+#define MAX_NUMBER_OF_TOKENS 128
 #endif
 
 #define ROOT_TOKEN_INDEX 0
@@ -69,7 +67,7 @@ parser_error_t json_parse(parsed_json_t *parsed_json,
 /// Get the number of elements in the array
 /// \param json
 /// \param array_token_index
-/// \param number of elements (out)
+/// \param number_elements (out)
 /// \return Error message
 parser_error_t array_get_element_count(const parsed_json_t *json,
                                        uint16_t array_token_index,
@@ -79,7 +77,7 @@ parser_error_t array_get_element_count(const parsed_json_t *json,
 /// \param json
 /// \param array_token_index
 /// \param element_index
-/// \param token index
+/// \param token_index
 /// \return Error message
 parser_error_t array_get_nth_element(const parsed_json_t *json,
                                      uint16_t array_token_index,
@@ -89,7 +87,7 @@ parser_error_t array_get_nth_element(const parsed_json_t *json,
 /// Get the number of dictionary elements (key/value pairs) under given object
 /// \param json
 /// \param object_token_index: token index of the parent object
-/// \param number of elements (out)
+/// \param number_elements (out)
 /// \return Error message
 parser_error_t object_get_element_count(const parsed_json_t *json,
                                         uint16_t object_token_index,
@@ -99,7 +97,7 @@ parser_error_t object_get_element_count(const parsed_json_t *json,
 /// \param json
 /// \param object_token_index: token index of the parent object
 /// \param object_element_index
-/// \return token index (out)
+/// \param token_index (out)
 /// \return Error message
 parser_error_t object_get_nth_key(const parsed_json_t *json,
                                   uint16_t object_token_index,
@@ -110,7 +108,7 @@ parser_error_t object_get_nth_key(const parsed_json_t *json,
 /// \param json
 /// \param object_token_index: token index of the parent object
 /// \param object_element_index
-/// \return token index (out))
+/// \param token_index (out)
 /// \return Error message
 parser_error_t object_get_nth_value(const parsed_json_t *json,
                                     uint16_t object_token_index,
@@ -121,6 +119,7 @@ parser_error_t object_get_nth_value(const parsed_json_t *json,
 /// \param json
 /// \param object_token_index: token index of the parent object
 /// \param key_name: key name of the wanted value
+/// \param token_index (out)
 /// \return Error message
 parser_error_t object_get_value(const parsed_json_t *json,
                                 uint16_t object_token_index,

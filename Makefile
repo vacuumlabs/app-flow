@@ -40,6 +40,7 @@ APP_SOURCE_PATH += deps/ledger-zxlib/src
 APP_SOURCE_PATH += deps/ledger-zxlib/app/common
 APP_SOURCE_PATH += deps/ledger-zxlib/app/ui
 APP_SOURCE_PATH += deps/jsmn/src
+APP_SOURCE_FILES += ${BOLOS_SDK}/lib_standard_app/crypto_helpers.c
 
 # Application icons following guidelines:
 # https://developers.ledger.com/docs/embedded-app/design-requirements/#device-icon

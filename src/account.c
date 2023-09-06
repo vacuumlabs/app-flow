@@ -1,18 +1,18 @@
 /*******************************************************************************
-*   (c) 2020 Zondax GmbH
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   (c) 2020 Zondax GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 #include "account.h"
 #include "zxmacros.h"
 #include "zxformat.h"
@@ -20,19 +20,14 @@
 #include "apdu_codes.h"
 #include "hdpath.h"
 
-typedef enum {
-    SLOT_OP_SET,
-    SLOT_OP_UPDATE,
-    SLOT_UP_DELETE
-} slotop_t;
+typedef enum { SLOT_OP_SET, SLOT_OP_UPDATE, SLOT_UP_DELETE } slotop_t;
 
 account_slot_t tmp_slot;
 uint8_t tmp_slotIdx;
 slotop_t tmp_slotop;
 
-slot_store_t NV_CONST
-N_slot_store_impl __attribute__ ((aligned(64)));
-#define N_slot_store (*(NV_VOLATILE slot_store_t *)PIC(&N_slot_store_impl))
+slot_store_t NV_CONST N_slot_store_impl __attribute__((aligned(64)));
+#define N_slot_store (*(NV_VOLATILE slot_store_t *) PIC(&N_slot_store_impl))
 
 uint8_t slot_is_empty(const account_slot_t *tmp) {
     return tmp->path.data[0] == 0;
@@ -58,9 +53,12 @@ zxerr_t slot_getNumItems(uint8_t *num_items) {
 }
 
 zxerr_t slot_getItem(int8_t displayIdx,
-                     char *outKey, uint16_t outKeyLen,
-                     char *outVal, uint16_t outValLen,
-                     uint8_t pageIdx, uint8_t *pageCount) {
+                     char *outKey,
+                     uint16_t outKeyLen,
+                     char *outVal,
+                     uint16_t outValLen,
+                     uint8_t pageIdx,
+                     uint8_t *pageCount) {
     zemu_log_stack("slot_getItem");
     *pageCount = 1;
 
@@ -80,7 +78,11 @@ zxerr_t slot_getItem(int8_t displayIdx,
                 case 2: {
                     char bufferUI[130];
                     snprintf(outKey, outKeyLen, "Path");
-                    path_options_to_string(bufferUI, sizeof(bufferUI), tmp_slot.path.data, HDPATH_LEN_DEFAULT, tmp_slot.options);
+                    path_options_to_string(bufferUI,
+                                           sizeof(bufferUI),
+                                           tmp_slot.path.data,
+                                           HDPATH_LEN_DEFAULT,
+                                           tmp_slot.options);
                     pageString(outVal, outValLen, bufferUI, pageIdx, pageCount);
                     return zxerr_ok;
                 }
@@ -89,7 +91,8 @@ zxerr_t slot_getItem(int8_t displayIdx,
             }
         }
         case SLOT_OP_UPDATE: {
-            const account_slot_t *oldSlot = &N_slot_store.slot[tmp_slotIdx];
+            const account_slot_t *oldSlot =
+                (const account_slot_t *) &N_slot_store.slot[tmp_slotIdx];
             switch (displayIdx) {
                 case 0: {
                     snprintf(outKey, outKeyLen, "Update");
@@ -104,7 +107,11 @@ zxerr_t slot_getItem(int8_t displayIdx,
                 case 2: {
                     char bufferUI[130];
                     snprintf(outKey, outKeyLen, "Old Path");
-                    path_options_to_string(bufferUI, sizeof(bufferUI), oldSlot->path.data, HDPATH_LEN_DEFAULT, oldSlot->options);
+                    path_options_to_string(bufferUI,
+                                           sizeof(bufferUI),
+                                           oldSlot->path.data,
+                                           HDPATH_LEN_DEFAULT,
+                                           oldSlot->options);
                     pageString(outVal, outValLen, bufferUI, pageIdx, pageCount);
                     return zxerr_ok;
                 }
@@ -116,7 +123,11 @@ zxerr_t slot_getItem(int8_t displayIdx,
                 case 4: {
                     char bufferUI[130];
                     snprintf(outKey, outKeyLen, "New Path");
-                    path_options_to_string(bufferUI, sizeof(bufferUI), tmp_slot.path.data, HDPATH_LEN_DEFAULT, tmp_slot.options);
+                    path_options_to_string(bufferUI,
+                                           sizeof(bufferUI),
+                                           tmp_slot.path.data,
+                                           HDPATH_LEN_DEFAULT,
+                                           tmp_slot.options);
                     pageString(outVal, outValLen, bufferUI, pageIdx, pageCount);
                     return zxerr_ok;
                 }
@@ -126,7 +137,8 @@ zxerr_t slot_getItem(int8_t displayIdx,
             break;
         }
         case SLOT_UP_DELETE: {
-            const account_slot_t *oldSlot = &N_slot_store.slot[tmp_slotIdx];
+            const account_slot_t *oldSlot =
+                (const account_slot_t *) &N_slot_store.slot[tmp_slotIdx];
             switch (displayIdx) {
                 case 0: {
                     snprintf(outKey, outKeyLen, "Delete");
@@ -141,7 +153,11 @@ zxerr_t slot_getItem(int8_t displayIdx,
                 case 2: {
                     char bufferUI[130];
                     snprintf(outKey, outKeyLen, "Old Path");
-                    path_options_to_string(bufferUI, sizeof(bufferUI), oldSlot->path.data, HDPATH_LEN_DEFAULT, oldSlot->options);
+                    path_options_to_string(bufferUI,
+                                           sizeof(bufferUI),
+                                           oldSlot->path.data,
+                                           HDPATH_LEN_DEFAULT,
+                                           oldSlot->options);
                     pageString(outVal, outValLen, bufferUI, pageIdx, pageCount);
                     return zxerr_ok;
                 }
@@ -151,6 +167,7 @@ zxerr_t slot_getItem(int8_t displayIdx,
             break;
         }
     }
+    return zxerr_no_data;
 }
 
 zxerr_t slot_status(uint8_t *out, uint16_t outLen) {
@@ -160,7 +177,7 @@ zxerr_t slot_status(uint8_t *out, uint16_t outLen) {
 
     MEMZERO(out, outLen);
     for (uint8_t i = 0; i < SLOT_COUNT; i++) {
-        const account_slot_t *tmp = &N_slot_store.slot[i];
+        const account_slot_t *tmp = (const account_slot_t *) &N_slot_store.slot[i];
         if (!slot_is_empty(tmp)) {
             out[i] = 1;
         }
@@ -175,7 +192,7 @@ zxerr_t slot_getSlot(uint8_t slotIndex, account_slot_t *out) {
     }
 
     // Check if empty
-    const account_slot_t *tmp = &N_slot_store.slot[slotIndex];
+    const account_slot_t *tmp = (const account_slot_t *) &N_slot_store.slot[slotIndex];
     if (tmp->path.data[0] == 0) {
         return zxerr_no_data;
     }
@@ -193,9 +210,9 @@ zxerr_t slot_parseSlot(uint8_t *buffer, uint16_t bufferLen) {
     struct {
         uint8_t slotIdx[1];
         uint8_t account[ACCOUNT_SIZE];
-        uint8_t path[sizeof(uint32_t)*HDPATH_LEN_DEFAULT];
+        uint8_t path[sizeof(uint32_t) * HDPATH_LEN_DEFAULT];
         uint8_t options[2];
-    }* apduData = (void*) buffer;
+    } *apduData = (void *) buffer;
 
     if (bufferLen != sizeof(*apduData)) {
         snprintf(bufferUI, sizeof(bufferUI), "dataLen does not match: %d", bufferLen);
@@ -218,8 +235,10 @@ zxerr_t slot_parseSlot(uint8_t *buffer, uint16_t bufferLen) {
                    "Incompatible option types.");
     MEMCPY(&tmp_slot.options, &apduData->options, sizeof(apduData->options));
 
-    const bool mainnet = tmp_slot.path.data[0] == HDPATH_0_DEFAULT && tmp_slot.path.data[1] == HDPATH_1_DEFAULT;
-    const bool testnet = tmp_slot.path.data[0] == HDPATH_0_TESTNET && tmp_slot.path.data[1] == HDPATH_1_TESTNET;
+    const bool mainnet =
+        tmp_slot.path.data[0] == HDPATH_0_DEFAULT && tmp_slot.path.data[1] == HDPATH_1_DEFAULT;
+    const bool testnet =
+        tmp_slot.path.data[0] == HDPATH_0_TESTNET && tmp_slot.path.data[1] == HDPATH_1_TESTNET;
     const bool empty = tmp_slot.path.data[0] == 0 && tmp_slot.path.data[1] == 0;
 
     if (!mainnet && !testnet && !empty) {
@@ -236,7 +255,7 @@ zxerr_t slot_parseSlot(uint8_t *buffer, uint16_t bufferLen) {
     }
 
     tmp_slotop = SLOT_OP_UPDATE;
-    if (slot_is_empty(&N_slot_store.slot[tmp_slotIdx])) {
+    if (slot_is_empty((const account_slot_t *) &N_slot_store.slot[tmp_slotIdx])) {
         tmp_slotop = SLOT_OP_SET;
     } else if (slot_is_empty(&tmp_slot)) {
         tmp_slotop = SLOT_UP_DELETE;
@@ -251,9 +270,9 @@ zxerr_t slot_serializeSlot(const account_slot_t *slot, uint8_t *buffer, uint16_t
 
     struct {
         uint8_t account[ACCOUNT_SIZE];
-        uint8_t path[sizeof(uint32_t)*HDPATH_LEN_DEFAULT];
+        uint8_t path[sizeof(uint32_t) * HDPATH_LEN_DEFAULT];
         uint8_t options[2];
-    }* apduData = (void*) buffer;
+    } *apduData = (void *) buffer;
 
     if (*bufferLen < sizeof(*apduData)) {
         snprintf(bufferUI, sizeof(bufferUI), "buffer too small");
@@ -275,7 +294,7 @@ zxerr_t slot_serializeSlot(const account_slot_t *slot, uint8_t *buffer, uint16_t
 }
 
 void app_slot_setSlot() {
-    MEMCPY_NV(&N_slot_store.slot[tmp_slotIdx], &tmp_slot, sizeof(account_slot_t));
+    MEMCPY_NV((void *) &N_slot_store.slot[tmp_slotIdx], &tmp_slot, sizeof(account_slot_t));
     set_code(G_io_apdu_buffer, 0, APDU_CODE_OK);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
@@ -284,36 +303,34 @@ void loadAddressFromSlot(uint8_t hasHdPath) {
     account_slot_t slot;
     zxerr_t err = slot_getSlot(MAIN_SLOT, &slot);
 
-    if (!(err == zxerr_no_data  || err == zxerr_ok)) {
+    if (!(err == zxerr_no_data || err == zxerr_ok)) {
         show_address = SHOW_ADDRESS_ERROR;
         return;
     }
 
-    //Case 1 Empty slot 0
+    // Case 1 Empty slot 0
     if (err == zxerr_no_data) {
         show_address = SHOW_ADDRESS_EMPTY_SLOT;
-    }
-    else {
-        //Case 2 Slot 0 derivation path is not the same as APDU derivation path (including curve)
+    } else {
+        // Case 2 Slot 0 derivation path is not the same as APDU derivation path (including curve)
         _Static_assert(sizeof(slot.path.data) == sizeof(hdPath.data),
                        "Incompatible derivation path types");
-        if (hasHdPath && ( memcmp(slot.path.data, hdPath.data, sizeof(hdPath.data))
-                           || ((slot.options & 0xFF00) != (cryptoOptions & 0xFF00)))) { //curve portion of cryptoOptions
+        if (hasHdPath && (memcmp(slot.path.data, hdPath.data, sizeof(hdPath.data)) ||
+                          ((slot.options & 0xFF00) !=
+                           (cryptoOptions & 0xFF00)))) {  // curve portion of cryptoOptions
             show_address = SHOW_ADDRESS_HDPATHS_NOT_EQUAL;
-        }
-        else {
-            //Case 3 Everything is OK
+        } else {
+            // Case 3 Everything is OK
             _Static_assert(sizeof(address_to_display.data) == sizeof(slot.account.data),
                            "Incompatible address types");
             memcpy(address_to_display.data, slot.account.data, sizeof(address_to_display.data));
             if (hasHdPath && ((slot.options & 0x00FF) != (cryptoOptions & 0x00FF))) {
                 show_address = SHOW_ADDRESS_YES_HASH_MISMATCH;
-            }
-            else {
+            } else {
                 show_address = SHOW_ADDRESS_YES;
             }
 
-            //load hdPath from slot if necessary
+            // load hdPath from slot if necessary
             if (!hasHdPath) {
                 _Static_assert(sizeof(hdPath.data) == sizeof(slot.path.data),
                                "Incompatible derivation path types");

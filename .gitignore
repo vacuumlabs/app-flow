@@ -8,25 +8,15 @@ debug/
 # Temporary directory with snapshots taken during test runs
 tests/snapshots-tmp/
 
-\cmake-build-debug
-/cmake-build-fuzz/
-\.idea/
+# Python
+*.pyc
+**__pycache__
+*.egg-info
+.eggs/
 
-# Created by cmake
-googletest-download/
-googletest-src/
-googletest-build/
-CMakeFiles/
-CMakeCache.txt
-unittests
-*.cmake
-Testing/
-cmake-build-fuzz/
+# Doxygen
+docs/html
+docs/latex
 
-node_modules/.yarn-integrity
-/fuzz-*.log
-/fuzz/corpora
-/tests_speculos/node_modules/
-/tests_speculos/yarn.lock
-/tests_speculos/speculos-port*.log
-*.new.png
+# Virtual env for sideload (macOS and Windows)
+ledger/
