@@ -155,7 +155,7 @@ def test_get_slot_refused(firmware, backend, navigator, test_name):
     # Send the APDU (Asynchronous)
     with pytest.raises(ExceptionRAPDU) as err:
         with client.set_slot(slot, address, path, curve, hash_t):
-            util_navigate(firmware, navigator, test_name, "REJECT")
+            util_navigate(firmware, navigator, test_name, "REJECT_SLOT")
 
         # Assert we have received a refusal
         assert err.value.status == Errors.SW_COMMAND_NOT_ALLOWED

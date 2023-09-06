@@ -114,7 +114,7 @@ def test_get_public_key_confirm_accepted(firmware, backend, navigator, test_name
 
     # Send the APDU (Asynchronous)
     with client.get_public_key_with_confirmation(path, curve, hash_t):
-        util_navigate(firmware, navigator, test_name, "APPROVE")
+        util_navigate(firmware, navigator, test_name, "APPROVE_PUBKEY")
 
     # Check the status (Asynchronous)
     response = client.get_async_response()
@@ -141,7 +141,7 @@ def test_get_public_key_confirm_refused(firmware, backend, navigator, test_name)
     # Send the APDU (Asynchronous)
     with pytest.raises(ExceptionRAPDU) as err:
         with client.get_public_key_with_confirmation(path, curve, hash_t):
-            util_navigate(firmware, navigator, test_name, "REJECT")
+            util_navigate(firmware, navigator, test_name, "REJECT_PUBKEY")
 
         # Assert we have received a refusal
         assert err.value.status == Errors.SW_COMMAND_NOT_ALLOWED

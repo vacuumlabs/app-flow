@@ -47,6 +47,7 @@ APP_SOURCE_FILES += ${BOLOS_SDK}/lib_standard_app/crypto_helpers.c
 ICON_NANOS = icons/nanos_icon.gif
 ICON_NANOX = icons/nanox_icon.gif
 ICON_NANOSP = icons/nanox_icon.gif
+ICON_STAX = icons/stax_icon.gif
 
 # Application allowed derivation curves.
 # Possibles curves are: secp256k1, secp256r1, ed25519 and bls12381g1

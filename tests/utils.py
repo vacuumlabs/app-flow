@@ -99,7 +99,7 @@ def util_set_slot(
 
     # Send the APDU (Asynchronous)
     with client.set_slot(slot, address, path, curve, hash_t):
-        util_navigate(firmware, navigator, test_name, "APPROVE")
+        util_navigate(firmware, navigator, test_name, "APPROVE_SLOT")
 
     # Check the status (Asynchronous)
     response = client.get_async_response()
@@ -121,8 +121,10 @@ def util_set_expert_mode(
         ]
     else:
         instructions = [
-            NavInsID.USE_CASE_HOME_INFO,
-            NavInsID.USE_CASE_SETTINGS_SINGLE_PAGE_EXIT
+            NavInsID.USE_CASE_HOME_SETTINGS,
+            NavInsID.USE_CASE_SETTINGS_NEXT,
+            NavIns(NavInsID.TOUCH, (340, 128)),
+            NavInsID.USE_CASE_SETTINGS_MULTI_PAGE_EXIT
         ]
     navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH, test_name, instructions,
                                    screen_change_before_first_instruction=False)
@@ -137,48 +139,41 @@ def util_navigate(
 ) -> None:
     """ Navigate in the menus with conditions """
 
+    assert text
+    valid_instr = []
+
     if firmware.device.startswith("nano"):
-        navigator.navigate_until_text_and_compare(NavInsID.RIGHT_CLICK,
-                                                [NavInsID.BOTH_CLICK],
-                                                text,
-                                                ROOT_SCREENSHOT_PATH,
-                                                test_name,
-                                                timeout=timeout)
+        text = text.split("_")[0]
+        nav_inst = NavInsID.RIGHT_CLICK
+        valid_instr.append(NavInsID.BOTH_CLICK)
+
     else:
-        if text == "APPROVE":
-            instructions = [
-                NavInsID.USE_CASE_REVIEW_TAP,
-                NavIns(NavInsID.TOUCH, (200, 335)),
-                NavInsID.USE_CASE_ADDRESS_CONFIRMATION_EXIT_QR,
-                NavInsID.USE_CASE_ADDRESS_CONFIRMATION_CONFIRM,
-                NavInsID.USE_CASE_STATUS_DISMISS
-            ]
-            navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH,
-                                        test_name,
-                                        instructions,
-                                        timeout=timeout)
-        elif text == "REJECT":
-            instructions_set = [
-                [
-                    NavInsID.USE_CASE_REVIEW_REJECT,
-                    NavInsID.USE_CASE_STATUS_DISMISS
-                ],
-                [
-                    NavInsID.USE_CASE_REVIEW_TAP,
-                    NavInsID.USE_CASE_ADDRESS_CONFIRMATION_CANCEL,
-                    NavInsID.USE_CASE_STATUS_DISMISS
-                ]
-            ]
-            for i, instructions in enumerate(instructions_set):
-                navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH,
-                                            test_name + f"/part{i}",
-                                            instructions,
-                                            timeout=timeout)
+        if text.startswith("APPROVE"):
+            if text == "APPROVE_PUBKEY":
+                text = "Confirm"
+                valid_instr.append(NavInsID.USE_CASE_ADDRESS_CONFIRMATION_CONFIRM)
+            else:
+                text = "Hold to sign"
+                valid_instr.append(NavInsID.USE_CASE_REVIEW_CONFIRM)
+            nav_inst = NavInsID.USE_CASE_REVIEW_TAP
+
+        elif text.startswith("REJECT"):
+            if text in ("REJECT_SIGN", "REJECT_SLOT"):
+                text = "Reject transaction?"
+                valid_instr.append(NavInsID.USE_CASE_CHOICE_CONFIRM)
+            else:
+                text = "Cancel"
+                valid_instr.append(NavInsID.USE_CASE_CHOICE_REJECT)
+            nav_inst = NavInsID.USE_CASE_REVIEW_REJECT
+
         else:
-            navigator.navigate_until_text_and_compare(NavInsID.USE_CASE_REVIEW_TAP,
-                                                    [NavInsID.USE_CASE_REVIEW_CONFIRM,
-                                                    NavInsID.USE_CASE_STATUS_DISMISS],
-                                                    text,
-                                                    ROOT_SCREENSHOT_PATH,
-                                                    test_name,
-                                                    timeout=timeout)
+            raise ValueError(f'Wrong text "{text}"')
+
+        valid_instr.append(NavInsID.USE_CASE_STATUS_DISMISS)
+
+    navigator.navigate_until_text_and_compare(nav_inst,
+                                              valid_instr,
+                                              text,
+                                              ROOT_SCREENSHOT_PATH,
+                                              test_name,
+                                              timeout)

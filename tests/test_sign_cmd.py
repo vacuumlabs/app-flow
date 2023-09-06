@@ -39,7 +39,7 @@ def _check_transaction(
 
     # Send the APDU (Asynchronous)
     with client.sign_tx(path, curve, message, hash_t):
-        util_navigate(firmware, navigator, test_name, "APPROVE", timeout)
+        util_navigate(firmware, navigator, test_name, "APPROVE_SIGN", timeout)
 
     # Send the APDU (Asynchronous)
     response = client.get_async_response()
@@ -208,7 +208,7 @@ def test_transaction_refused(firmware, backend, navigator, test_name):
     # Send the APDU (Asynchronous)
     with pytest.raises(ExceptionRAPDU) as err:
         with client.sign_tx(path, curve, message, hash_t):
-            util_navigate(firmware, navigator, test_name, "REJECT")
+            util_navigate(firmware, navigator, test_name, "REJECT_SIGN")
 
         # Assert we have received a refusal
         assert err.value.status == Errors.SW_COMMAND_NOT_ALLOWED
