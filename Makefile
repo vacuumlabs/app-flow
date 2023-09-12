@@ -38,6 +38,7 @@ APP_SOURCE_PATH += src
 APP_SOURCE_PATH += deps/ledger-zxlib/include
 APP_SOURCE_PATH += deps/ledger-zxlib/src
 APP_SOURCE_PATH += deps/ledger-zxlib/app/common
+APP_SOURCE_PATH += deps/ledger-zxlib/app/ui
 APP_SOURCE_PATH += deps/jsmn/src
 
 # Application icons following guidelines:
@@ -111,7 +112,6 @@ ifeq ($(TARGET_NAME),TARGET_NANOS)
 DISABLE_STANDARD_BAGL_UX_FLOW = 1
 endif
 
-
 ########################################
 #        Main app configuration        #
 ########################################
@@ -124,10 +124,6 @@ APP_STACK_SIZE:=2480
 endif
 
 #########################
-
-CFLAGS += -O3 -Os -Wno-unknown-pragmas
-LDFLAGS  += -O3 -Os
-SDK_SOURCE_PATH  += lib_ux
 
 # Import generic rules from the SDK
 include $(BOLOS_SDK)/Makefile.standard_app

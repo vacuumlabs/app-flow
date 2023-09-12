@@ -42,7 +42,7 @@ zxerr_t addr_getItem_internal(int8_t *displayIdx,
     SCREEN(hasPubkey) {
         snprintf(outKey, outKeyLen, "Pub Key");
         // +1 is to skip 0x04 prefix that indicates uncompresed key 
-        pageHexString(outVal, outValLen, pubkey_to_display+1, sizeof(pubkey_to_display)-1, pageIdx, pageCount);
+        pageStringHex(outVal, outValLen, pubkey_to_display+1, sizeof(pubkey_to_display)-1, pageIdx, pageCount);
         return zxerr_ok;
     }
 
@@ -75,7 +75,7 @@ zxerr_t addr_getItem_internal(int8_t *displayIdx,
             case SHOW_ADDRESS_YES:
             case SHOW_ADDRESS_YES_HASH_MISMATCH:
                 snprintf(outKey, outKeyLen, "Address:");
-                pageHexString(outVal, outValLen, address_to_display.data, sizeof(address_to_display.data), pageIdx, pageCount);
+                pageStringHex(outVal, outValLen, address_to_display.data, sizeof(address_to_display.data), pageIdx, pageCount);
                 return zxerr_ok;
             default:
                 return zxerr_no_data;
