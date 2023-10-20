@@ -26,4 +26,4 @@ jobs:
       with:
         builtin: clear,rare
         check_filenames: true
-        skip: ./js/yarn.lock,./js/package-lock.json,./tests/testvectors/*,./tests/generate-transaction-tests/*,./deps/jsmn/test/tests.c,./deps/PicoSHA2/test/test.cpp
+        skip: ./deps/jsmn/test/tests.c
