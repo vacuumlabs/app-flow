@@ -101,11 +101,11 @@ def test_get_slot_empty(backend):
     with pytest.raises(ExceptionRAPDU) as err:
         # Send the APDU
         response = client.get_slot(slot)
-
-        # Assert we have received a refusal
-        assert err.value.status == Errors.SW_EMPTY_BUFFER
-        assert len(err.value.data) == 0
         assert not response.data
+
+    # Assert we have received a refusal
+    assert err.value.status == Errors.SW_EMPTY_BUFFER
+    assert len(err.value.data) == 0
 
 
 def test_get_slot_accepted(firmware, backend, navigator, test_name):
@@ -157,6 +157,6 @@ def test_get_slot_refused(firmware, backend, navigator, test_name):
         with client.set_slot(slot, address, path, curve, hash_t):
             util_navigate(firmware, navigator, test_name, "REJECT_SLOT")
 
-        # Assert we have received a refusal
-        assert err.value.status == Errors.SW_COMMAND_NOT_ALLOWED
-        assert len(err.value.data) == 0
+    # Assert we have received a refusal
+    assert err.value.status == Errors.SW_COMMAND_NOT_ALLOWED
+    assert len(err.value.data) == 0

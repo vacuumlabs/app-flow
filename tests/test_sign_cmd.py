@@ -210,9 +210,9 @@ def test_transaction_refused(firmware, backend, navigator, test_name):
         with client.sign_tx(path, curve, message, hash_t):
             util_navigate(firmware, navigator, test_name, "REJECT_SIGN")
 
-        # Assert we have received a refusal
-        assert err.value.status == Errors.SW_COMMAND_NOT_ALLOWED
-        assert len(err.value.data) == 0
+    # Assert we have received a refusal
+    assert err.value.status == Errors.SW_COMMAND_NOT_ALLOWED
+    assert len(err.value.data) == 0
 
 
 def test_transaction_manifest(firmware, backend, navigator, test_name):
