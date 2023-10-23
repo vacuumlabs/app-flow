@@ -143,6 +143,6 @@ def test_get_public_key_confirm_refused(firmware, backend, navigator, test_name)
         with client.get_public_key_with_confirmation(path, curve, hash_t):
             util_navigate(firmware, navigator, test_name, "REJECT_PUBKEY")
 
-        # Assert we have received a refusal
-        assert err.value.status == Errors.SW_COMMAND_NOT_ALLOWED
-        assert len(err.value.data) == 0
+    # Assert we have received a refusal
+    assert err.value.status == Errors.SW_COMMAND_NOT_ALLOWED
+    assert len(err.value.data) == 0
