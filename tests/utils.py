@@ -159,7 +159,7 @@ def util_navigate(
 
         elif text.startswith("REJECT"):
             if text in ("REJECT_SIGN", "REJECT_SLOT"):
-                text = "Reject transaction?"
+                text = r"Reject transaction\?"
                 valid_instr.append(NavInsID.USE_CASE_CHOICE_CONFIRM)
             else:
                 text = "Cancel"
