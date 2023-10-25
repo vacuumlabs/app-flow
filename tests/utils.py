@@ -141,7 +141,6 @@ def util_navigate(
 
     assert text
     valid_instr = []
-    screen_change: bool = True
 
     if firmware.device.startswith("nano"):
         text = text.split("_")[0]
@@ -160,9 +159,8 @@ def util_navigate(
 
         elif text.startswith("REJECT"):
             if text in ("REJECT_SIGN", "REJECT_SLOT"):
-                text = "Reject transaction?"
+                text = r"Reject transaction\?"
                 valid_instr.append(NavInsID.USE_CASE_CHOICE_CONFIRM)
-                screen_change = False
             else:
                 text = "Cancel"
                 valid_instr.append(NavInsID.USE_CASE_CHOICE_REJECT)
@@ -178,5 +176,4 @@ def util_navigate(
                                               text,
                                               ROOT_SCREENSHOT_PATH,
                                               test_name,
-                                              timeout,
-                                              screen_change_before_first_instruction=screen_change)
+                                              timeout)
