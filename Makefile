@@ -76,6 +76,9 @@ VARIANT_VALUES = FLOW
 
 # Enabling DEBUG flag will enable PRINTF and disable optimizations
 #DEBUG = 1
+ifeq ($(DEBUG),1)
+DEFINES += ZEMU_LOGGING
+endif
 
 #######################################
 #     Application custom permissions   #
