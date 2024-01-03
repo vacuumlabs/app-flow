@@ -30,6 +30,9 @@ class P1(IntEnum):
 
 class P2(IntEnum):
     """ Parameter 2 definitions """
+    # Parameter 2 for SIGN P1_LAST
+    P2_NO_METADATA = 0x01
+    # Parameter 2 P2_MORE.
     P2_MORE = 0x80
 
 class InsType(IntEnum):
@@ -247,6 +250,7 @@ class FlowCommandSender:
         with self.backend.exchange_async(cla=ClaType.CLA_APP,
                                         ins=InsType.SIGN,
                                         p1=P1.P1_LAST,
+                                        p2=P2.P2_NO_METADATA,
                                         data=messages[-1]) as response:
             yield response
 
