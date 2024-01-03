@@ -26,8 +26,6 @@
 extern "C" {
 #endif
 
-#include "bolos_target.h"
-
 /// Max number of accepted tokens in the JSON input
 #define MAX_NUMBER_OF_TOKENS 256
 
