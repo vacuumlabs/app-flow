@@ -36,7 +36,7 @@ typedef enum {
 #define METADATA_HASH_SIZE 32 //CX_SHA256_SIZE
 #define MAX_METADATA_MAX_ARRAY_ITEMS 20
 
-//It is planed that all these strings may be on flash, thus they are volatile (for NanoX and NanoSPlus)
+//It is planned that all these strings may be on flash, thus they are volatile (for NanoX and NanoSPlus)
 typedef struct {
     argument_type_e argumentType;
     uint8_t arrayMinElements; //defined only for ARGUMENT_TYPE_ARRAY and ARGUMENT_TYPE_OPTIONALARRAY
