@@ -100,6 +100,7 @@ void sha256(const uint8_t *message, uint16_t messageLen, uint8_t message_digest[
 
 zxerr_t digest_message(const uint8_t *message,
                        uint16_t messageLen,
+                       const uint8_t domainTag[DOMAIN_TAG_LENGTH],
                        digest_type_e hash_kind,
                        uint8_t *digest,
                        uint16_t digestMax,
@@ -113,8 +114,14 @@ zxerr_t digest_message(const uint8_t *message,
                 zemu_log_stack("digest_message: zxerr_buffer_too_small");
                 return zxerr_buffer_too_small;
             }
-            sha256(message, messageLen, digest);
-            *digest_size = CX_SHA256_SIZE;
+            cx_sha256_t sha2;
+            cx_err = cx_sha256_init_no_throw(&sha2);
+            if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
+            cx_err = cx_hash_no_throw((cx_hash_t*) &sha2, 0, domainTag, DOMAIN_TAG_LENGTH, NULL, 0);
+            if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
+            cx_err = cx_hash_no_throw((cx_hash_t*) &sha2, CX_LAST, message, messageLen, digest, CX_SHA256_SIZE);
+            if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
+            *digest_size = cx_hash_get_size((cx_hash_t *) &sha2);;
             return zxerr_ok;
         }
         case HASH_SHA3_256: {
@@ -125,10 +132,11 @@ zxerr_t digest_message(const uint8_t *message,
             cx_sha3_t sha3;
             cx_err = cx_sha3_init_no_throw(&sha3, 256);
             if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
+            cx_err = cx_hash_no_throw((cx_hash_t*) &sha3, 0, domainTag, DOMAIN_TAG_LENGTH, NULL, 0);
+            if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
             cx_err =
                 cx_hash_no_throw((cx_hash_t *) &sha3, CX_LAST, message, messageLen, digest, 32);
             if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
-            zemu_log_stack("sha3_256 ready");
             *digest_size = cx_hash_get_size((cx_hash_t *) &sha3);
             return zxerr_ok;
         }
@@ -143,6 +151,7 @@ zxerr_t crypto_sign(const hd_path_t path,
                     const uint16_t options,
                     const uint8_t *message,
                     uint16_t messageLen,
+                    const uint8_t domainTag[DOMAIN_TAG_LENGTH],
                     uint8_t *buffer,
                     uint16_t bufferSize,
                     uint16_t *sigSize) {
@@ -162,6 +171,7 @@ zxerr_t crypto_sign(const hd_path_t path,
 
     CHECK_ZXERR(digest_message(message,
                                messageLen,
+                               domainTag,
                                cx_hash_kind,
                                messageDigest,
                                sizeof(messageDigest),

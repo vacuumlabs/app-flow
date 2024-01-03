@@ -51,15 +51,17 @@ const uint8_t TX_DOMAIN_TAG[DOMAIN_TAG_LENGTH] = {
     0x63, 0x74, 0x69, 0x6F, 0x6E, 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
 };
 
-#define TX_BUFFER_OFFSET DOMAIN_TAG_LENGTH
-
 void tx_initialize() {
-    buffering_init(ram_buffer, sizeof(ram_buffer), (uint8_t *) N_appdata.buffer, FLASH_BUFFER_SIZE);
+    buffering_init(
+            ram_buffer,
+            sizeof(ram_buffer),
+            (uint8_t *) N_appdata.buffer,
+            sizeof(N_appdata.buffer)
+    );
 }
 
 void tx_reset() {
     buffering_reset();
-    buffering_append((uint8_t *) TX_DOMAIN_TAG, DOMAIN_TAG_LENGTH);
 }
 
 uint32_t tx_append(unsigned char *buffer, uint32_t length) {
@@ -67,21 +69,10 @@ uint32_t tx_append(unsigned char *buffer, uint32_t length) {
 }
 
 uint32_t tx_get_buffer_length() {
-    if (buffering_get_buffer()->pos >= TX_BUFFER_OFFSET) {
-        return buffering_get_buffer()->pos - TX_BUFFER_OFFSET;
-    }
-    return 0;
-}
-
-uint32_t get_signable_length() {
     return buffering_get_buffer()->pos;
 }
 
 uint8_t *tx_get_buffer() {
-    return buffering_get_buffer()->data + TX_BUFFER_OFFSET;
-}
-
-uint8_t *get_signable() {
     return buffering_get_buffer()->data;
 }
 

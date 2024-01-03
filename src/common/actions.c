@@ -18,3 +18,19 @@
 #include "actions.h"
 
 uint16_t action_addr_len;
+
+// UTF-8 encoding of "FLOW-V0.0-transaction" padded with zeros to 32 bytes
+const uint8_t TX_DOMAIN_TAG_TRANSACTION[DOMAIN_TAG_LENGTH] = {\
+    0x46, 0x4C, 0x4F, 0x57, 0x2D, 0x56, 0x30, 0x2E, 
+    0x30, 0x2D, 0x74, 0x72, 0x61, 0x6E, 0x73, 0x61, 
+    0x63, 0x74, 0x69, 0x6F, 0x6E,    0,    0,    0,
+       0,    0,    0,    0,    0,    0,    0,    0,
+};
+
+// UTF-8 encoding of "FLOW-V0.0-user" padded with zeros to 32 bytes
+const uint8_t TX_DOMAIN_TAG_MESSAGE[DOMAIN_TAG_LENGTH] = {\
+    0x46, 0x4C, 0x4F, 0x57, 0x2D, 0x56, 0x30, 0x2E, 
+    0x30, 0x2D, 0x75, 0x73, 0x65, 0x72,    0,    0, 
+       0,    0,    0,    0,    0,    0,    0,    0,
+       0,    0,    0,    0,    0,    0,    0,    0,
+};
