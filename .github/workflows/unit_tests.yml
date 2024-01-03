@@ -67,5 +67,5 @@ jobs:
           files: ./unit-tests/coverage.info
           flags: unittests
           name: codecov-app-flow
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           verbose: true
