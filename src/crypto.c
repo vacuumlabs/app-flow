@@ -117,11 +117,18 @@ zxerr_t digest_message(const uint8_t *message,
             cx_sha256_t sha2;
             cx_err = cx_sha256_init_no_throw(&sha2);
             if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
-            cx_err = cx_hash_no_throw((cx_hash_t*) &sha2, 0, domainTag, DOMAIN_TAG_LENGTH, NULL, 0);
+            cx_err =
+                cx_hash_no_throw((cx_hash_t *) &sha2, 0, domainTag, DOMAIN_TAG_LENGTH, NULL, 0);
             if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
-            cx_err = cx_hash_no_throw((cx_hash_t*) &sha2, CX_LAST, message, messageLen, digest, CX_SHA256_SIZE);
+            cx_err = cx_hash_no_throw((cx_hash_t *) &sha2,
+                                      CX_LAST,
+                                      message,
+                                      messageLen,
+                                      digest,
+                                      CX_SHA256_SIZE);
             if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
-            *digest_size = cx_hash_get_size((cx_hash_t *) &sha2);;
+            *digest_size = cx_hash_get_size((cx_hash_t *) &sha2);
+            ;
             return zxerr_ok;
         }
         case HASH_SHA3_256: {
@@ -132,7 +139,8 @@ zxerr_t digest_message(const uint8_t *message,
             cx_sha3_t sha3;
             cx_err = cx_sha3_init_no_throw(&sha3, 256);
             if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
-            cx_err = cx_hash_no_throw((cx_hash_t*) &sha3, 0, domainTag, DOMAIN_TAG_LENGTH, NULL, 0);
+            cx_err =
+                cx_hash_no_throw((cx_hash_t *) &sha3, 0, domainTag, DOMAIN_TAG_LENGTH, NULL, 0);
             if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
             cx_err =
                 cx_hash_no_throw((cx_hash_t *) &sha3, CX_LAST, message, messageLen, digest, 32);

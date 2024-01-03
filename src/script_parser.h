@@ -26,8 +26,11 @@ typedef struct {
     script_element_t elements[MAX_SCRIPT_PARSED_ELEMENTS];
 } script_parsed_elements_t;
 
-bool parseScript(script_parsed_elements_t *parsedElements, const uint8_t *scriptToParse, size_t scriptToParseSize, 
-                 const uint8_t *scriptTemplate, size_t scriptTemplateSize);
+bool parseScript(script_parsed_elements_t *parsedElements,
+                 const uint8_t *scriptToParse,
+                 size_t scriptToParseSize,
+                 const uint8_t *scriptTemplate,
+                 size_t scriptTemplateSize);
 
 typedef enum {
     PARSED_ELEMENTS_NFT1_NON_FUNGIBLE_TOKEN_ADDRESS = 0,
@@ -45,8 +48,9 @@ typedef enum {
     PARSED_ELEMENTS_NFT1_COUNT = 11,
 } parsed_elements_nft1_index_t;
 
-
-bool parseNFT1(script_parsed_elements_t *parsedElements, const uint8_t *scriptToParse, size_t scriptToParseSize);
+bool parseNFT1(script_parsed_elements_t *parsedElements,
+               const uint8_t *scriptToParse,
+               size_t scriptToParseSize);
 
 typedef enum {
     PARSED_ELEMENTS_NFT2_NON_FUNGIBLE_TOKEN_ADDRESS = 0,
@@ -61,9 +65,10 @@ typedef enum {
     PARSED_ELEMENTS_NFT2_COUNT = 8,
 } parsed_elements_nft2_index_t;
 
-bool parseNFT2(script_parsed_elements_t *parsedElements, const uint8_t *scriptToParse, size_t scriptToParseSize);
-
+bool parseNFT2(script_parsed_elements_t *parsedElements,
+               const uint8_t *scriptToParse,
+               size_t scriptToParseSize);
 
 #ifdef __cplusplus
-} //end extern C
+}  // end extern C
 #endif

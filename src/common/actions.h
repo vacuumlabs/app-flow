@@ -33,7 +33,14 @@ __Z_INLINE void app_sign() {
     const uint16_t messageLength = tx_get_buffer_length();
 
     uint16_t replyLen = 0;
-    zxerr_t err = crypto_sign(hdPath, cryptoOptions, message, messageLength, TX_DOMAIN_TAG_TRANSACTION, G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, &replyLen);
+    zxerr_t err = crypto_sign(hdPath,
+                              cryptoOptions,
+                              message,
+                              messageLength,
+                              TX_DOMAIN_TAG_TRANSACTION,
+                              G_io_apdu_buffer,
+                              IO_APDU_BUFFER_SIZE - 3,
+                              &replyLen);
 
     if (err != zxerr_ok || replyLen == 0) {
         set_code(G_io_apdu_buffer, 0, APDU_CODE_SIGN_VERIFY_ERROR);
@@ -49,7 +56,14 @@ __Z_INLINE void app_sign_message() {
     const uint16_t messageLength = tx_get_buffer_length();
 
     uint16_t replyLen = 0;
-    zxerr_t err = crypto_sign(hdPath, cryptoOptions, message, messageLength, TX_DOMAIN_TAG_MESSAGE, G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, &replyLen);
+    zxerr_t err = crypto_sign(hdPath,
+                              cryptoOptions,
+                              message,
+                              messageLength,
+                              TX_DOMAIN_TAG_MESSAGE,
+                              G_io_apdu_buffer,
+                              IO_APDU_BUFFER_SIZE - 3,
+                              &replyLen);
 
     if (err != zxerr_ok || replyLen == 0) {
         set_code(G_io_apdu_buffer, 0, APDU_CODE_SIGN_VERIFY_ERROR);
