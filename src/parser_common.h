@@ -78,6 +78,10 @@ typedef enum {
     // Required fields
     PARSER_REQUIRED_NONCE,
     PARSER_REQUIRED_METHOD,
+    // Metadata errors
+    PARSER_METADATA_ERROR,
+    PARSER_METADATA_TOO_MANY_HASHES,
+    PARSER_TOO_MANY_ARGUMENTS,
 } parser_error_t;
 
 typedef struct {

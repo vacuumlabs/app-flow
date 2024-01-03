@@ -20,9 +20,9 @@
 #include "zxmacros.h"
 #include "zxformat.h"
 #include "zxerror.h"
-#include "lib_standard_app/crypto_helpers.h"
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
+#include "lib_standard_app/crypto_helpers.h"
 #include "cx.h"
 
 __Z_INLINE digest_type_e get_hash_type(const uint16_t options) {
