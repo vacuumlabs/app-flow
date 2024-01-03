@@ -30,11 +30,12 @@ extern "C" {
 #include <stdio.h>
 #include "string.h"
 
-#ifndef __APPLE__
+// relatko: removed to make c unittests work
+/*#ifndef __APPLE__
 
 extern void explicit_bzero(void *s, size_t n) __THROW __nonnull ((1));
 
-#endif
+#endif*/
 
 #define __Z_INLINE inline __attribute__((always_inline)) static
 #define __Z_UNUSED __attribute__((unused))

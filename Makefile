@@ -76,9 +76,6 @@ VARIANT_VALUES = FLOW
 
 # Enabling DEBUG flag will enable PRINTF and disable optimizations
 #DEBUG = 1
-ifeq ($(DEBUG),1)
-DEFINES += ZEMU_LOGGING
-endif
 
 #######################################
 #     Application custom permissions   #
@@ -126,6 +123,16 @@ DEFINES   += LEDGER_SPECIFIC
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 APP_STACK_SIZE:=2480
+endif
+
+########################################
+#        Unit tests and misc           #
+########################################
+
+ifeq ($(DEBUG),1)
+DEFINES += ZEMU_LOGGING=1
+else
+DEFINES += ZEMU_LOGGING=0
 endif
 
 #########################
