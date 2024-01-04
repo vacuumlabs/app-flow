@@ -16,16 +16,24 @@ from ragger.firmware import Firmware
 
 ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 TX_DOMAIN_TAG = "FLOW-V0.0-transaction"
+MESSAGE_DOMAIN_TAG = "FLOW-V0.0-user"
 DOMAIN_TAG_LENGTH = 32
 
 
-def _init_header() -> bytes:
+def _init_header(signable_type: str) -> bytes:
     """ Prepare the message Header (DOMAIN_TAG) """
 
-    hdr = TX_DOMAIN_TAG.encode("utf-8").hex()
-    pad_size = DOMAIN_TAG_LENGTH - len(TX_DOMAIN_TAG)
-    hdr += bytearray([0] * pad_size).hex()
-    return bytes.fromhex(hdr)
+    if signable_type == "message":
+        hdr = MESSAGE_DOMAIN_TAG.encode("utf-8").hex()
+        pad_size = DOMAIN_TAG_LENGTH - len(MESSAGE_DOMAIN_TAG)
+        hdr += bytearray([0] * pad_size).hex()
+        return bytes.fromhex(hdr)
+        
+    else:
+        hdr = TX_DOMAIN_TAG.encode("utf-8").hex()
+        pad_size = DOMAIN_TAG_LENGTH - len(TX_DOMAIN_TAG)
+        hdr += bytearray([0] * pad_size).hex()
+        return bytes.fromhex(hdr)
 
 
 def util_check_signature(
@@ -34,6 +42,7 @@ def util_check_signature(
         message: bytes,
         curve: CurveChoice,
         hash_t: HashType,
+        signable_type: str
 ) -> bool:
     """ Check if the signature of a given message is valid """
 
@@ -57,7 +66,7 @@ def util_check_signature(
     key: VerifyingKey = VerifyingKey.from_string(public_key, ec_curve, hashfunc)
 
     # Prepare the message Header (DOMAIN_TAG)
-    data = _init_header() + message
+    data = _init_header(signable_type) + message
 
     assert key.verify(signature, data, hashfunc, sigdecode_der)
 

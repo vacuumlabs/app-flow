@@ -27,6 +27,7 @@ def _check_transaction(
         path: str,
         curve: CurveChoice,
         hash_t: HashType,
+        signable_type: str,
         timeout: int = 300,
 ) -> None:
     """ Check the transaction in confirmation mode when user accepts """
@@ -38,7 +39,7 @@ def _check_transaction(
     message = bytes.fromhex(transaction)
 
     # Send the APDU (Asynchronous)
-    with client.sign_tx(path, curve, message, hash_t):
+    with client.sign_tx(path, curve, message, hash_t, signable_type):
         util_navigate(firmware, navigator, test_name, "APPROVE_SIGN", timeout)
 
     # Send the APDU (Asynchronous)
@@ -48,7 +49,7 @@ def _check_transaction(
     # Parse the response
     _, der_sig = unpack_sign_tx_response(response.data)
     # Check the signature
-    util_check_signature(public_key, der_sig, message, curve, hash_t)
+    util_check_signature(public_key, der_sig, message, curve, hash_t, signable_type)
 
 
 def test_transaction_params(firmware, backend, navigator, test_name):
@@ -78,7 +79,7 @@ def test_transaction_params(firmware, backend, navigator, test_name):
         for curve in curve_list:
             for hash_t in hash_list:
                 part += 1
-                _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, path, curve, hash_t)
+                _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, path, curve, hash_t, "")
 
 
 class Test_EXPERT():
@@ -108,7 +109,7 @@ class Test_EXPERT():
         # Send the APDU and check the results
         for cfg in test_cfg:
             part += 1
-            _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, path, cfg["curve"], cfg["hash"])
+            _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, path, cfg["curve"], cfg["hash"], "")
 
 
 def test_transaction_slot(firmware, backend, navigator, test_name):
@@ -128,7 +129,7 @@ def test_transaction_slot(firmware, backend, navigator, test_name):
 
     # Send the APDU and check the results
     part = 0
-    _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, path, curve, hash_t)
+    _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, path, curve, hash_t, "")
 
     # Set slot to correct path correct address,
     part += 1
@@ -136,11 +137,11 @@ def test_transaction_slot(firmware, backend, navigator, test_name):
 
     # Sign the Tx again - incorrect hd path
     part += 1
-    _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, bad_path, curve, hash_t)
+    _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, bad_path, curve, hash_t, "")
 
     # Sign the Tx again - correct path
     part += 1
-    _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, path, curve, hash_t)
+    _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, path, curve, hash_t, "")
 
     # e467b9dd11fa00df - used as incorrect address; f8d6e0586b0a20c7 - correct one
     transactions = [
@@ -161,11 +162,11 @@ def test_transaction_slot(firmware, backend, navigator, test_name):
     # Send the APDU and check the results
     for blob in transactions:
         part += 1
-        _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", blob, path, curve, hash_t)
+        _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", blob, path, curve, hash_t, "")
 
     # sign the Tx again - correct path - wrong hash
         part += 1
-    _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, path, curve, bad_hash)
+    _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, path, curve, bad_hash, "")
 
     # Now delete the slot so that the next test starts in a clean state
     util_set_slot(client, firmware, navigator, test_name, slot)
@@ -186,7 +187,7 @@ def test_transaction_invalid(firmware, backend, navigator, test_name):
 
     # Send the APDU and check the results
     try:
-        _check_transaction(client, firmware, navigator, test_name, transaction, path, curve, hash_t, 5)
+        _check_transaction(client, firmware, navigator, test_name, transaction, path, curve, hash_t, "", 5)
     except TimeoutError:
         pass
 
@@ -292,4 +293,82 @@ def test_transaction_manifest(firmware, backend, navigator, test_name):
     part = 0
     for transaction in transactions:
         part += 1
-        _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, path, curve, hash_t)
+        _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", transaction, path, curve, hash_t, "")
+        
+class Test_MESSAGE():
+    def test_message_normal(self, firmware, backend, navigator, test_name):
+        """ Check message signing, short message """
+
+        # Use the app interface instead of raw interface
+        client = FlowCommandSender(backend)
+        # Test parameters
+        path: str = "m/44'/539'/0'/0/0"
+        test_cfg = [
+            {
+                "curve": CurveChoice.Secp256k1,
+                "hash": HashType.HASH_SHA2,
+                # "This is a nice message that has only displayable characters and is short enough to be displayed"
+                "message": "546869732069732061206e696365206d657373616765207468617420686173206f6e6c7920646973706c617961626c65206368617261637465727320616e642069732073686f727420656e6f75676820746f20626520646973706c61796564"
+            },
+            {
+                "curve": CurveChoice.Secp256k1,
+                "hash": HashType.HASH_SHA2,
+                # Message too long to be displayed normally
+                "message": 1000*"40"
+            },
+            {
+                "curve": CurveChoice.Nist256p1,
+                "hash": HashType.HASH_SHA3,
+                # "This is a nice message that has only displayable characters and is short enough to be displayed"
+                "message": "546869732069732061206e696365206d657373616765207468617420686173206f6e6c7920646973706c617961626c65206368617261637465727320616e642069732073686f727420656e6f75676820746f20626520646973706c61796564"
+            },
+            {
+                "curve": CurveChoice.Secp256k1,
+                "hash": HashType.HASH_SHA2,
+                # Message too long to be displayed normally
+                "message": 1000*"40"
+            },
+        ]
+        
+        part = 0
+
+        # Send the APDU and check the results
+        for i,cfg in enumerate(test_cfg):
+            _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", cfg["message"], path, cfg["curve"], cfg["hash"], "message")
+            part += 1
+            if i == 1:
+                # Navigate in the main menu to change to expert mode          
+                util_set_expert_mode(firmware, navigator, f"{test_name}/part{part}")
+                part += 1
+
+
+    def test_message_invalid(self, firmware, backend, navigator, test_name):
+        """ Check message signing, message with non-displayale character """
+
+        # Use the app interface instead of raw interface
+        client = FlowCommandSender(backend)
+        # Test parameters
+        path: str = "m/44'/539'/0'/0/0"
+        test_cfg = [
+            {
+                "curve": CurveChoice.Secp256k1,
+                "hash": HashType.HASH_SHA2,
+                # Message with non-displayable characters
+                "message": "4d657373616765ee"
+            },
+        ]
+        
+        part = 0
+
+        # Send the APDU and check the results
+        for cfg in test_cfg:
+            # Convert message to bytes
+            message = bytes.fromhex(cfg["message"])
+
+            # Send the APDU (Asynchronous)
+            with pytest.raises(ExceptionRAPDU) as err:
+                with client.sign_tx(path, cfg["curve"], message, cfg["hash"], "message"):
+                    pass
+            assert(str(err) == "<ExceptionInfo ExceptionRAPDU(status=27012, data=b'Invalid message') tblen=8>")
+            part += 1
+
