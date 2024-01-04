@@ -27,6 +27,7 @@ class P1(IntEnum):
     P1_INIT = 0x00
     P1_ADD  = 0x01
     P1_LAST = 0x02
+    P1_LAST_MESSAGE = 0x10
 
 class P2(IntEnum):
     """ Parameter 2 definitions """
@@ -231,6 +232,7 @@ class FlowCommandSender:
         curve: CurveChoice,
         transaction: bytes,
         hash_t: HashType,
+        hint: str = ""
     ) -> Generator[None, None, None]:
         """ APDU sign transaction """
 
@@ -246,11 +248,18 @@ class FlowCommandSender:
                                   ins=InsType.SIGN,
                                   p1=P1.P1_ADD,
                                   data=msg)
+                                  
+        if (hint == "message"):
+            p1 = P1.P1_LAST_MESSAGE
+            p2 = 0
+        else:
+            p1 = P1.P1_LAST
+            p2 = P2.P2_NO_METADATA
 
         with self.backend.exchange_async(cla=ClaType.CLA_APP,
                                         ins=InsType.SIGN,
-                                        p1=P1.P1_LAST,
-                                        p2=P2.P2_NO_METADATA,
+                                        p1=p1,
+                                        p2=p2,
                                         data=messages[-1]) as response:
             yield response
 
