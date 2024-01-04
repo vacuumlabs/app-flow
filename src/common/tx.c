@@ -20,6 +20,7 @@
 #include "parser_tx.h"
 #include <string.h>
 #include "zxmacros.h"
+#include "app_mode.h"
 
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
 #define RAM_BUFFER_SIZE   8192
@@ -74,16 +75,46 @@ uint8_t *tx_get_buffer() {
     return buffering_get_buffer()->data;
 }
 
-const char *tx_parse() {
-    uint8_t err = parser_parse(&ctx_parsed_tx, tx_get_buffer(), tx_get_buffer_length());
+const char *tx_parse(process_chunk_response_t typeOfCall) {
+    script_parsed_type_t scriptType =
+        (typeOfCall == PROCESS_CHUNK_FINISHED_NFT1)   ? SCRIPT_TYPE_NFT_SETUP_COLLECTION
+        : (typeOfCall == PROCESS_CHUNK_FINISHED_NFT2) ? SCRIPT_TYPE_NFT_TRANSFER
+                                                      : SCRIPT_TYPE_UNKNOWN;
+    // parse tx
+    uint8_t err = parser_parse(&ctx_parsed_tx, tx_get_buffer(), tx_get_buffer_length(), scriptType);
 
     if (err != PARSER_OK) {
         return parser_getErrorDescription(err);
     }
 
-    err = parser_validate(&ctx_parsed_tx);
+    // parse metadata
+    parser_tx_obj.metadataInitialized = false;
+    switch (typeOfCall) {
+        case PROCESS_CHUNK_FINISHED_WITH_METADATA:
+            MEMZERO(&parser_tx_obj.metadata, sizeof(parser_tx_obj.metadata));
+            err = parseTxMetadata(parser_tx_obj.hash.digest, &parser_tx_obj.metadata);
+            if (err != PARSER_OK) {
+                return parser_getErrorDescription(err);
+            }
+            parser_tx_obj.metadataInitialized = true;
+            break;
+        case PROCESS_CHUNK_FINISHED_NFT1:
+        case PROCESS_CHUNK_FINISHED_NFT2:
+            break;  // we do not need metadata for these scripts
+        case PROCESS_CHUNK_FINISHED_NO_METADATA:
+            if (!app_mode_expert()) {  // we do not need metadata for these scripts, but this
+                                       // workflow should work only in expert mode
+                return parser_getErrorDescription(PARSER_UNEXPECTED_SCRIPT);
+            }
+            break;
+        default:
+            return parser_getErrorDescription(PARSER_UNEXPECTED_ERROR);
+    }
+
     CHECK_APP_CANARY()
 
+    // validate
+    err = parser_validate(&ctx_parsed_tx);
     if (err != PARSER_OK) {
         return parser_getErrorDescription(err);
     }

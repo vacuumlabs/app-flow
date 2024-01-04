@@ -26,7 +26,7 @@
 #include "cx.h"
 
 __Z_INLINE digest_type_e get_hash_type(const uint16_t options) {
-    const uint8_t hash_type = (uint8_t)(options & 0xFF);
+    const uint8_t hash_type = (uint8_t) (options & 0xFF);
     switch (hash_type) {
         case 0x01:
             zemu_log_stack("path: sha2_256");
@@ -41,7 +41,7 @@ __Z_INLINE digest_type_e get_hash_type(const uint16_t options) {
 }
 
 __Z_INLINE cx_curve_t get_cx_curve(const uint16_t options) {
-    const uint8_t curve_code = (uint8_t)((options >> 8) & 0xFF);
+    const uint8_t curve_code = (uint8_t) ((options >> 8) & 0xFF);
     switch (curve_code) {
         case 0x02: {
             zemu_log_stack("curve: secp256r1");
