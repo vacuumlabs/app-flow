@@ -81,7 +81,7 @@ process_chunk_response_t process_chunk(__Z_UNUSED volatile uint32_t *tx, uint32_
             }
             switch (p2) {
                 case 0x01:
-                    zemu_log("Transaction witout metadata.\n");
+                    zemu_log("Transaction without metadata.\n");
                     return PROCESS_CHUNK_FINISHED_NO_METADATA;
                 case 0x02:
                     zemu_log("Transaction to match nft1 script.\n");
@@ -90,7 +90,7 @@ process_chunk_response_t process_chunk(__Z_UNUSED volatile uint32_t *tx, uint32_
                     zemu_log("Transaction to match nft2 script.\n");
                     return PROCESS_CHUNK_FINISHED_NFT2;
                 default:
-                    zemu_log("Incalid P2 transaction type.\n");
+                    zemu_log("Invalid P2 transaction type.\n");
                     THROW(APDU_CODE_INVALIDP1P2);
             }
         case 0x03:

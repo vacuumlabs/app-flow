@@ -1,11 +1,13 @@
 from enum import IntEnum, Enum
-from typing import Generator, Optional
+from typing import Generator, Optional, List
 from contextlib import contextmanager
 from bip_utils import Bip32Utils  # type: ignore[import]
 
 from ragger.backend.interface import BackendInterface, RAPDU
 from ragger.bip import CurveChoice
 from ragger.utils.misc import split_message
+
+from application_client.txMerkleTree import merkleTree, merkleIndex
 
 
 MAX_APDU_LEN: int = 255
@@ -27,6 +29,9 @@ class P1(IntEnum):
     P1_INIT = 0x00
     P1_ADD  = 0x01
     P1_LAST = 0x02
+    P1_METADATA = 0x03
+    P1_PROOF_ONGOING = 0x04
+    P1_PROOF_LAST = 0x05
     P1_LAST_MESSAGE = 0x10
 
 class P2(IntEnum):
@@ -236,7 +241,7 @@ class FlowCommandSender:
     ) -> Generator[None, None, None]:
         """ APDU sign transaction """
 
-        data_path= _format_apdu_data(curve, hash_t, path)
+        data_path = _format_apdu_data(curve, hash_t, path)
         self.backend.exchange(cla=ClaType.CLA_APP,
                               ins=InsType.SIGN,
                               p1=P1.P1_INIT,
@@ -248,20 +253,63 @@ class FlowCommandSender:
                                   ins=InsType.SIGN,
                                   p1=P1.P1_ADD,
                                   data=msg)
-                                  
-        if (hint == "message"):
-            p1 = P1.P1_LAST_MESSAGE
-            p2 = 0
-        else:
-            p1 = P1.P1_LAST
-            p2 = P2.P2_NO_METADATA
 
-        with self.backend.exchange_async(cla=ClaType.CLA_APP,
-                                        ins=InsType.SIGN,
-                                        p1=p1,
-                                        p2=p2,
-                                        data=messages[-1]) as response:
-            yield response
+        # We need to process nft1 and nft2 options here
+        if hint == "message":
+            with self.backend.exchange_async(cla=ClaType.CLA_APP,
+                                            ins=InsType.SIGN,
+                                            p1=P1.P1_LAST_MESSAGE,
+                                            data=messages[-1]) as response:
+                yield response
+        else:
+            merkleI = merkleIndex.get(hint[0:16], None)
+            if merkleI is None:
+                with self.backend.exchange_async(cla=ClaType.CLA_APP,
+                                                ins=InsType.SIGN,
+                                                p1=P1.P1_LAST,
+                                                p2=P2.P2_NO_METADATA,
+                                                data=messages[-1]) as response:
+                    yield response
+            else:
+                # pylint: disable=line-too-long
+                metadata: str = merkleTree["children"][merkleI[0]]["children"][merkleI[1]]["children"][merkleI[2]]["children"][merkleI[3]]["children"][0] # type: ignore
+                merkleTreeLevel: List[str] = [
+                    "".join(ch["hash"] for ch in merkleTree["children"][merkleI[0]]["children"][merkleI[1]]["children"][merkleI[2]]["children"]), # type: ignore
+                    "".join(ch["hash"] for ch in merkleTree["children"][merkleI[0]]["children"][merkleI[1]]["children"]), # type: ignore
+                    "".join(ch["hash"] for ch in merkleTree["children"][merkleI[0]]["children"]), # type: ignore
+                    "".join(ch["hash"] for ch in merkleTree["children"]) # type: ignore
+                ]
+                # pylint: enable=line-too-long
+
+                #send the rest of the transaction
+                self.backend.exchange(cla=ClaType.CLA_APP,
+                                      ins=InsType.SIGN,
+                                      p1=P1.P1_ADD,
+                                      data=messages[-1])
+                #send metadata
+                self.backend.exchange(cla=ClaType.CLA_APP,
+                                      ins=InsType.SIGN,
+                                      p1=P1.P1_METADATA,
+                                      data=bytes.fromhex(metadata))
+                #send proof
+                self.backend.exchange(cla=ClaType.CLA_APP,
+                                      ins=InsType.SIGN,
+                                      p1=P1.P1_PROOF_ONGOING,
+                                      data=bytes.fromhex(merkleTreeLevel[0]))
+                self.backend.exchange(cla=ClaType.CLA_APP,
+                                      ins=InsType.SIGN,
+                                      p1=P1.P1_PROOF_ONGOING,
+                                      data=bytes.fromhex(merkleTreeLevel[1]))
+                self.backend.exchange(cla=ClaType.CLA_APP,
+                                      ins=InsType.SIGN,
+                                      p1=P1.P1_PROOF_ONGOING,
+                                      data=bytes.fromhex(merkleTreeLevel[2]))
+                with self.backend.exchange_async(cla=ClaType.CLA_APP,
+                                                ins=InsType.SIGN,
+                                                p1=P1.P1_PROOF_LAST,
+                                                data=bytes.fromhex(merkleTreeLevel[3])) as response:
+                    yield response
+
 
     def get_async_response(self) -> Optional[RAPDU]:
         """ Asynchronous APDU response """

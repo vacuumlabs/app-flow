@@ -112,9 +112,11 @@ __Z_INLINE void handleSign(volatile uint32_t *flags, volatile uint32_t *tx, uint
             view_review_show(REVIEW_TXN);
             *flags |= IO_ASYNCH_REPLY;
             break;
-        case PROCESS_CHUNK_FINISHED_NO_METADATA:;
-            zemu_log("Processing chunks finished, no metadata.\n");
-            const char *error_msg = tx_parse();
+        case PROCESS_CHUNK_FINISHED_NFT1:
+        case PROCESS_CHUNK_FINISHED_NFT2:
+        case PROCESS_CHUNK_FINISHED_NO_METADATA:
+        case PROCESS_CHUNK_FINISHED_WITH_METADATA:;
+            const char *error_msg = tx_parse(callType);
 
             if (error_msg != NULL) {
                 int error_msg_length = strlen(error_msg);

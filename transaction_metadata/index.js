@@ -253,7 +253,7 @@ const data = "" +
 
 fs.writeFileSync("txMerkleTree.js", data);
 
-const data2 = "" +
+const data2 = "# pylint: skip-file\n" +
     "merkleTree = " + JSON.stringify(merkleTree, null, 2) + "\n\n" +
     "merkleIndex = " + JSON.stringify(merkleIndex, null, 2) + "\n\n";
 

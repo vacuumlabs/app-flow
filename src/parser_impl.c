@@ -78,6 +78,18 @@ const char *parser_getErrorDescription(parser_error_t err) {
             return "parser_rlp_error_buffer_too_small";
         case PARSER_RLP_ERROR_INVALID_PAGE:
             return "parser_rlp_error_invalid_page";
+        case PARSER_JSON_INVALID:
+            return "parser_json_invalid";
+        case PARSER_JSON_INVALID_TOKEN_IDX:
+            return "parser_json_invalid_token_idx";
+        case PARSER_JSON_TOO_MANY_TOKENS:
+            return "parser_json_too_many_tokens";
+        case PARSER_JSON_INCOMPLETE_JSON:
+            return "parser_json_incomplete_json";
+        case PARSER_JSON_UNEXPECTED_ERROR:
+            return "parser_json_unex[ected_error";
+        case PARSER_JSON_ZERO_TOKENS:
+            return "parser_json_zero_tokens";
         case PARSER_UNEXPECTED_TX_VERSION:
             return "tx version is not supported";
         case PARSER_UNEXPECTED_TYPE:
@@ -112,6 +124,12 @@ const char *parser_getErrorDescription(parser_error_t err) {
             return "Required field nonce";
         case PARSER_REQUIRED_METHOD:
             return "Required field method";
+        case PARSER_METADATA_TOO_MANY_HASHES:
+            return "Metadata too many hashes";
+        case PARSER_METADATA_ERROR:
+            return "Metadata unknown error";
+        case PARSER_TOO_MANY_ARGUMENTS:
+            return "Too many arguments";
         default:
             return "Unrecognized error code";
     }
@@ -127,7 +145,7 @@ __Z_INLINE char hexDigit(uint8_t v) {
     return '?';
 }
 
-parser_error_t json_validateToken(parsed_json_t *parsedJson, uint16_t tokenIdx) {
+parser_error_t json_validateToken(const parsed_json_t *parsedJson, uint16_t tokenIdx) {
     if (!parsedJson->isValid) {
         return PARSER_JSON_INVALID;
     }
@@ -150,7 +168,7 @@ parser_error_t json_validateToken(parsed_json_t *parsedJson, uint16_t tokenIdx) 
 
 parser_error_t json_extractToken(char *outVal,
                                  uint16_t outValLen,
-                                 parsed_json_t *parsedJson,
+                                 const parsed_json_t *parsedJson,
                                  uint16_t tokenIdx) {
     MEMZERO(outVal, outValLen);
     CHECK_PARSER_ERR(json_validateToken(parsedJson, tokenIdx))
@@ -164,7 +182,9 @@ parser_error_t json_extractToken(char *outVal,
     return PARSER_OK;
 }
 
-parser_error_t json_matchToken(parsed_json_t *parsedJson, uint16_t tokenIdx, char *expectedValue) {
+parser_error_t json_matchToken(const parsed_json_t *parsedJson,
+                               uint16_t tokenIdx,
+                               const char *expectedValue) {
     CHECK_PARSER_ERR(json_validateToken(parsedJson, tokenIdx))
 
     const jsmntok_t token = parsedJson->tokens[tokenIdx];
@@ -183,7 +203,7 @@ parser_error_t json_matchToken(parsed_json_t *parsedJson, uint16_t tokenIdx, cha
     return PARSER_OK;
 }
 
-parser_error_t json_matchNull(parsed_json_t *parsedJson, uint16_t tokenIdx) {
+parser_error_t json_matchNull(const parsed_json_t *parsedJson, uint16_t tokenIdx) {
     CHECK_PARSER_ERR(json_validateToken(parsedJson, tokenIdx))
 
     const jsmntok_t token = parsedJson->tokens[tokenIdx];
@@ -202,9 +222,9 @@ parser_error_t json_matchNull(parsed_json_t *parsedJson, uint16_t tokenIdx) {
     return PARSER_OK;
 }
 
-parser_error_t json_matchKeyValue(parsed_json_t *parsedJson,
+parser_error_t json_matchKeyValue(const parsed_json_t *parsedJson,
                                   uint16_t tokenIdx,
-                                  char *expectedType,
+                                  const char *expectedType,
                                   jsmntype_t jsonType,
                                   uint16_t *valueTokenIdx) {
     CHECK_PARSER_ERR(json_validateToken(parsedJson, tokenIdx))
@@ -236,9 +256,9 @@ parser_error_t json_matchKeyValue(parsed_json_t *parsedJson,
 }
 
 // valueTokenIdx is JSON_MATCH_VALUE_IDX_NONE if the optional is null
-parser_error_t json_matchOptionalKeyValue(parsed_json_t *parsedJson,
+parser_error_t json_matchOptionalKeyValue(const parsed_json_t *parsedJson,
                                           uint16_t tokenIdx,
-                                          char *expectedType,
+                                          const char *expectedType,
                                           jsmntype_t jsonType,
                                           uint16_t *valueTokenIdx) {
     CHECK_PARSER_ERR(json_validateToken(parsedJson, tokenIdx))
@@ -274,7 +294,7 @@ parser_error_t json_matchOptionalKeyValue(parsed_json_t *parsedJson,
 }
 
 // valueTokenIdx is JSON_MATCH_VALUE_IDX_NONE if the optional is null
-parser_error_t json_matchOptionalArray(parsed_json_t *parsedJson,
+parser_error_t json_matchOptionalArray(const parsed_json_t *parsedJson,
                                        uint16_t tokenIdx,
                                        uint16_t *valueTokenIdx) {
     CHECK_PARSER_ERR(json_validateToken(parsedJson, tokenIdx))
@@ -317,6 +337,40 @@ parser_error_t json_matchOptionalArray(parsed_json_t *parsedJson,
     return PARSER_UNEXPECTED_VALUE;
 }
 
+parser_error_t json_matchArbitraryKeyValue(const parsed_json_t *parsedJson,
+                                           uint16_t tokenIdx,
+                                           jsmntype_t *valueJsonType,
+                                           uint16_t *keyTokenIdx,
+                                           uint16_t *valueTokenIdx) {
+    CHECK_PARSER_ERR(json_validateToken(parsedJson, tokenIdx))
+
+    if (!(tokenIdx + 4 < parsedJson->numberOfTokens)) {
+        // we need this token and 4 more
+        return PARSER_JSON_INVALID_TOKEN_IDX;
+    }
+
+    if (parsedJson->tokens[tokenIdx].type != JSMN_OBJECT) {
+        return PARSER_UNEXPECTED_TYPE;
+    }
+
+    if (parsedJson->tokens[tokenIdx].size != 2) {
+        return PARSER_UNEXPECTED_NUMBER_ITEMS;
+    }
+
+    // Type key/value
+    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 1, (char *) "type"))
+    if (parsedJson->tokens[tokenIdx + 2].type != JSMN_STRING) {
+        return PARSER_UNEXPECTED_TYPE;
+    }
+    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 3, (char *) "value"))
+
+    *keyTokenIdx = tokenIdx + 2;
+    *valueJsonType = parsedJson->tokens[tokenIdx + 4].type;
+    *valueTokenIdx = tokenIdx + 4;
+
+    return PARSER_OK;
+}
+
 parser_error_t formatStrUInt8AsHex(const char *decStr, char *hexStr) {
     uint16_t decLen = strnlen(decStr, 5);
     if (decLen > 3 || decLen == 0) {
@@ -339,227 +393,39 @@ parser_error_t formatStrUInt8AsHex(const char *decStr, char *hexStr) {
     return PARSER_OK;
 }
 
-parser_error_t json_extractString(char *outVal,
-                                  uint16_t outValLen,
-                                  parsed_json_t *parsedJson,
-                                  uint16_t tokenIdx) {
-    MEMZERO(outVal, outValLen);
-
-    uint16_t internalTokenElemIdx;
-    CHECK_PARSER_ERR(json_matchKeyValue(parsedJson,
-                                        tokenIdx,
-                                        (char *) "String",
-                                        JSMN_STRING,
-                                        &internalTokenElemIdx))
-
-    CHECK_PARSER_ERR(json_extractToken(outVal, outValLen, parsedJson, internalTokenElemIdx))
-
-    return PARSER_OK;
-}
-
-parser_error_t _matchScriptType(uint8_t scriptHash[32], script_type_e *scriptType) {
-    *scriptType = SCRIPT_UNKNOWN;
-
-    char buffer[100];
-    MEMZERO(buffer, sizeof(buffer));
-
-    // Check it is a known script digest
-    if (array_to_hexstr(buffer, sizeof(buffer), scriptHash, CX_SHA256_SIZE) != 64) {
-        return PARSER_UNEXPECTED_ERROR;
-    }
-
-    struct known_script_entry {
-        script_type_e script_type;
-        const char *template;
-    };
-
-    const struct known_script_entry KNOWN_TYPES[] = {
-        {SCRIPT_TOKEN_TRANSFER, TEMPLATE_HASH_TOKEN_TRANSFER_EMULATOR},
-        {SCRIPT_TOKEN_TRANSFER, TEMPLATE_HASH_TOKEN_TRANSFER_TESTNET},
-        {SCRIPT_TOKEN_TRANSFER, TEMPLATE_HASH_TOKEN_TRANSFER_MAINNET},
-
-        {SCRIPT_CREATE_ACCOUNT, TEMPLATE_HASH_CREATE_ACCOUNT},
-
-        {SCRIPT_ADD_NEW_KEY, TEMPLATE_HASH_ADD_NEW_KEY},
-
-        {SCRIPT_TH01_WITHDRAW_UNLOCKED_TOKENS, TEMPLATE_HASH_TH01_WITHDRAW_UNLOCKED_TOKENS_TESTNET},
-        {SCRIPT_TH01_WITHDRAW_UNLOCKED_TOKENS, TEMPLATE_HASH_TH01_WITHDRAW_UNLOCKED_TOKENS_MAINNET},
-
-        {SCRIPT_TH02_DEPOSIT_UNLOCKED_TOKENS, TEMPLATE_HASH_TH02_DEPOSIT_UNLOCKED_TOKENS_TESTNET},
-        {SCRIPT_TH02_DEPOSIT_UNLOCKED_TOKENS, TEMPLATE_HASH_TH02_DEPOSIT_UNLOCKED_TOKENS_MAINNET},
-
-        {SCRIPT_TH06_REGISTER_NODE, TEMPLATE_HASH_TH06_REGISTER_NODE_TESTNET},
-        {SCRIPT_TH06_REGISTER_NODE, TEMPLATE_HASH_TH06_REGISTER_NODE_MAINNET},
-
-        {SCRIPT_TH08_STAKE_NEW_TOKENS, TEMPLATE_HASH_TH08_STAKE_NEW_TOKENS_TESTNET},
-        {SCRIPT_TH08_STAKE_NEW_TOKENS, TEMPLATE_HASH_TH08_STAKE_NEW_TOKENS_MAINNET},
-
-        {SCRIPT_TH09_RESTAKE_UNSTAKED_TOKENS, TEMPLATE_HASH_TH09_RESTAKE_UNSTAKED_TOKENS_TESTNET},
-        {SCRIPT_TH09_RESTAKE_UNSTAKED_TOKENS, TEMPLATE_HASH_TH09_RESTAKE_UNSTAKED_TOKENS_MAINNET},
-
-        {SCRIPT_TH10_RESTAKE_REWARDED_TOKENS, TEMPLATE_HASH_TH10_RESTAKE_REWARDED_TOKENS_TESTNET},
-        {SCRIPT_TH10_RESTAKE_REWARDED_TOKENS, TEMPLATE_HASH_TH10_RESTAKE_REWARDED_TOKENS_MAINNET},
-
-        {SCRIPT_TH11_UNSTAKE_TOKENS, TEMPLATE_HASH_TH11_UNSTAKE_TOKENS_TESTNET},
-        {SCRIPT_TH11_UNSTAKE_TOKENS, TEMPLATE_HASH_TH11_UNSTAKE_TOKENS_MAINNET},
-
-        {SCRIPT_TH12_UNSTAKE_ALL_TOKENS, TEMPLATE_HASH_TH12_UNSTAKE_ALL_TOKENS_TESTNET},
-        {SCRIPT_TH12_UNSTAKE_ALL_TOKENS, TEMPLATE_HASH_TH12_UNSTAKE_ALL_TOKENS_MAINNET},
-
-        {SCRIPT_TH13_WITHDRAW_UNSTAKED_TOKENS, TEMPLATE_HASH_TH13_WITHDRAW_UNSTAKED_TOKENS_TESTNET},
-        {SCRIPT_TH13_WITHDRAW_UNSTAKED_TOKENS, TEMPLATE_HASH_TH13_WITHDRAW_UNSTAKED_TOKENS_MAINNET},
-
-        {SCRIPT_TH14_WITHDRAW_REWARDED_TOKENS, TEMPLATE_HASH_TH14_WITHDRAW_REWARDED_TOKENS_TESTNET},
-        {SCRIPT_TH14_WITHDRAW_REWARDED_TOKENS, TEMPLATE_HASH_TH14_WITHDRAW_REWARDED_TOKENS_MAINNET},
-
-        {SCRIPT_TH16_REGISTER_OPERATOR_NODE, TEMPLATE_HASH_TH16_REGISTER_OPERATOR_NODE_TESTNET},
-        {SCRIPT_TH16_REGISTER_OPERATOR_NODE, TEMPLATE_HASH_TH16_REGISTER_OPERATOR_NODE_MAINNET},
-
-        {SCRIPT_TH17_REGISTER_DELEGATOR, TEMPLATE_HASH_TH17_REGISTER_DELEGATOR_TESTNET},
-        {SCRIPT_TH17_REGISTER_DELEGATOR, TEMPLATE_HASH_TH17_REGISTER_DELEGATOR_MAINNET},
-
-        {SCRIPT_TH19_DELEGATE_NEW_TOKENS, TEMPLATE_HASH_TH19_DELEGATE_NEW_TOKENS_TESTNET},
-        {SCRIPT_TH19_DELEGATE_NEW_TOKENS, TEMPLATE_HASH_TH19_DELEGATE_NEW_TOKENS_MAINNET},
-
-        {SCRIPT_TH20_RESTAKE_UNSTAKED_DELEGATED_TOKENS,
-         TEMPLATE_HASH_TH20_RESTAKE_UNSTAKED_DELEGATED_TOKENS_TESTNET},
-        {SCRIPT_TH20_RESTAKE_UNSTAKED_DELEGATED_TOKENS,
-         TEMPLATE_HASH_TH20_RESTAKE_UNSTAKED_DELEGATED_TOKENS_MAINNET},
-
-        {SCRIPT_TH21_RESTAKE_REWARDED_DELEGATED_TOKENS,
-         TEMPLATE_HASH_TH21_RESTAKE_REWARDED_DELEGATED_TOKENS_TESTNET},
-        {SCRIPT_TH21_RESTAKE_REWARDED_DELEGATED_TOKENS,
-         TEMPLATE_HASH_TH21_RESTAKE_REWARDED_DELEGATED_TOKENS_MAINNET},
-
-        {SCRIPT_TH22_UNSTAKE_DELEGATED_TOKENS, TEMPLATE_HASH_TH22_UNSTAKE_DELEGATED_TOKENS_TESTNET},
-        {SCRIPT_TH22_UNSTAKE_DELEGATED_TOKENS, TEMPLATE_HASH_TH22_UNSTAKE_DELEGATED_TOKENS_MAINNET},
-
-        {SCRIPT_TH23_WITHDRAW_UNSTAKED_DELEGATED_TOKENS,
-         TEMPLATE_HASH_TH23_WITHDRAW_UNSTAKED_DELEGATED_TOKENS_TESTNET},
-        {SCRIPT_TH23_WITHDRAW_UNSTAKED_DELEGATED_TOKENS,
-         TEMPLATE_HASH_TH23_WITHDRAW_UNSTAKED_DELEGATED_TOKENS_MAINNET},
-
-        {SCRIPT_TH24_WITHDRAW_REWARDED_DELEGATED_TOKENS,
-         TEMPLATE_HASH_TH24_WITHDRAW_REWARDED_DELEGATED_TOKENS_TESTNET},
-        {SCRIPT_TH24_WITHDRAW_REWARDED_DELEGATED_TOKENS,
-         TEMPLATE_HASH_TH24_WITHDRAW_REWARDED_DELEGATED_TOKENS_MAINNET},
-
-        {SCRIPT_TH25_UPDATE_NETWORKING_ADDRESS,
-         TEMPLATE_HASH_TH25_UPDATE_NETWORKING_ADDRESS_TESTNET},
-        {SCRIPT_TH25_UPDATE_NETWORKING_ADDRESS,
-         TEMPLATE_HASH_TH25_UPDATE_NETWORKING_ADDRESS_MAINNET},
-
-        {SCRIPT_SCO01_SETUP_STAKING_COLLECTION,
-         TEMPLATE_HASH_SCO01_SETUP_STAKING_COLLECTION_TESTNET},
-        {SCRIPT_SCO01_SETUP_STAKING_COLLECTION,
-         TEMPLATE_HASH_SCO01_SETUP_STAKING_COLLECTION_MAINNET},
-
-        {SCRIPT_SCO02_REGISTER_DELEGATOR, TEMPLATE_HASH_SCO02_REGISTER_DELEGATOR_TESTNET},
-        {SCRIPT_SCO02_REGISTER_DELEGATOR, TEMPLATE_HASH_SCO02_REGISTER_DELEGATOR_MAINNET},
-
-        {SCRIPT_SCO03_REGISTER_NODE, TEMPLATE_HASH_SCO0301_REGISTER_NODE_TESTNET},
-        {SCRIPT_SCO03_REGISTER_NODE, TEMPLATE_HASH_SCO0301_REGISTER_NODE_MAINNET},
-
-        {SCRIPT_SCO04_CREATE_MACHINE_ACCOUNT, TEMPLATE_HASH_SCO0401_CREATE_MACHINE_ACCOUNT_TESTNET},
-        {SCRIPT_SCO04_CREATE_MACHINE_ACCOUNT, TEMPLATE_HASH_SCO0401_CREATE_MACHINE_ACCOUNT_MAINNET},
-
-        {SCRIPT_SCO05_REQUEST_UNSTAKING, TEMPLATE_HASH_SCO05_REQUEST_UNSTAKING_TESTNET},
-        {SCRIPT_SCO05_REQUEST_UNSTAKING, TEMPLATE_HASH_SCO05_REQUEST_UNSTAKING_MAINNET},
-
-        {SCRIPT_SCO06_STAKE_NEW_TOKENS, TEMPLATE_HASH_SCO06_STAKE_NEW_TOKENS_TESTNET},
-        {SCRIPT_SCO06_STAKE_NEW_TOKENS, TEMPLATE_HASH_SCO06_STAKE_NEW_TOKENS_MAINNET},
-
-        {SCRIPT_SCO07_STAKE_REWARD_TOKENS, TEMPLATE_HASH_SCO07_STAKE_REWARD_TOKENS_TESTNET},
-        {SCRIPT_SCO07_STAKE_REWARD_TOKENS, TEMPLATE_HASH_SCO07_STAKE_REWARD_TOKENS_MAINNET},
-
-        {SCRIPT_SCO08_STAKE_UNSTAKED_TOKENS, TEMPLATE_HASH_SCO08_STAKE_UNSTAKED_TOKENS_TESTNET},
-        {SCRIPT_SCO08_STAKE_UNSTAKED_TOKENS, TEMPLATE_HASH_SCO08_STAKE_UNSTAKED_TOKENS_MAINNET},
-
-        {SCRIPT_SCO09_UNSTAKE_ALL, TEMPLATE_HASH_SCO09_UNSTAKE_ALL_TESTNET},
-        {SCRIPT_SCO09_UNSTAKE_ALL, TEMPLATE_HASH_SCO09_UNSTAKE_ALL_MAINNET},
-
-        {SCRIPT_SCO10_WITHDRAW_REWARD_TOKENS, TEMPLATE_HASH_SCO10_WITHDRAW_REWARD_TOKENS_TESTNET},
-        {SCRIPT_SCO10_WITHDRAW_REWARD_TOKENS, TEMPLATE_HASH_SCO10_WITHDRAW_REWARD_TOKENS_MAINNET},
-
-        {SCRIPT_SCO11_WITHDRAW_UNSTAKED_TOKENS,
-         TEMPLATE_HASH_SCO11_WITHDRAW_UNSTAKED_TOKENS_TESTNET},
-        {SCRIPT_SCO11_WITHDRAW_UNSTAKED_TOKENS,
-         TEMPLATE_HASH_SCO11_WITHDRAW_UNSTAKED_TOKENS_MAINNET},
-
-        {SCRIPT_SCO12_CLOSE_STAKE, TEMPLATE_HASH_SCO12_CLOSE_STAKE_TESTNET},
-        {SCRIPT_SCO12_CLOSE_STAKE, TEMPLATE_HASH_SCO12_CLOSE_STAKE_MAINNET},
-
-        {SCRIPT_SCO13_TRANSFER_NODE, TEMPLATE_HASH_SCO13_TRANSFER_NODE_TESTNET},
-        {SCRIPT_SCO13_TRANSFER_NODE, TEMPLATE_HASH_SCO13_TRANSFER_NODE_MAINNET},
-
-        {SCRIPT_SCO14_TRANSFER_DELEGATOR, TEMPLATE_HASH_SCO14_TRANSFER_DELEGATOR_TESTNET},
-        {SCRIPT_SCO14_TRANSFER_DELEGATOR, TEMPLATE_HASH_SCO14_TRANSFER_DELEGATOR_MAINNET},
-
-        {SCRIPT_SCO15_WITHDRAW_FROM_MACHINE_ACCOUNT,
-         TEMPLATE_HASH_SCO15_WITHDRAW_FROM_MACHINE_ACCOUNT_TESTNET},
-        {SCRIPT_SCO15_WITHDRAW_FROM_MACHINE_ACCOUNT,
-         TEMPLATE_HASH_SCO15_WITHDRAW_FROM_MACHINE_ACCOUNT_MAINNET},
-
-        {SCRIPT_SCO16_UPDATE_NETWORKING_ADDRESS,
-         TEMPLATE_HASH_SCO16_UPDATE_NETWORKING_ADDRESS_TESTNET},
-        {SCRIPT_SCO16_UPDATE_NETWORKING_ADDRESS,
-         TEMPLATE_HASH_SCO16_UPDATE_NETWORKING_ADDRESS_MAINNET},
-
-        {SCRIPT_FUSD01_SETUP_FUSD_VAULT, TEMPLATE_HASH_FUSD01_SETUP_FUSD_VAULT_TESTNET},
-        {SCRIPT_FUSD01_SETUP_FUSD_VAULT, TEMPLATE_HASH_FUSD01_SETUP_FUSD_VAULT_MAINNET},
-
-        {SCRIPT_FUSD02_TRANSFER_FUSD, TEMPLATE_HASH_FUSD02_TRANSFER_FUSD_TESTNET},
-        {SCRIPT_FUSD02_TRANSFER_FUSD, TEMPLATE_HASH_FUSD02_TRANSFER_FUSD_MAINNET},
-
-        {SCRIPT_TS01_SET_UP_TOPSHOT_COLLECTION,
-         TEMPLATE_HASH_TS01_SET_UP_TOPSHOT_COLLECTION_TESTNET},
-        {SCRIPT_TS01_SET_UP_TOPSHOT_COLLECTION,
-         TEMPLATE_HASH_TS01_SET_UP_TOPSHOT_COLLECTION_MAINNET},
-
-        {SCRIPT_TS02_TRANSFER_TOP_SHOT_MOMENT, TEMPLATE_HASH_TS02_TRANSFER_TOP_SHOT_MOMENT_TESTNET},
-        {SCRIPT_TS02_TRANSFER_TOP_SHOT_MOMENT, TEMPLATE_HASH_TS02_TRANSFER_TOP_SHOT_MOMENT_MAINNET},
-
-        {SCRIPT_USDC01_SETUP_USDC_VAULT, TEMPLATE_HASH_USDC01_SETUP_USDC_VAULT_TESTNET},
-        {SCRIPT_USDC01_SETUP_USDC_VAULT, TEMPLATE_HASH_USDC01_SETUP_USDC_VAULT_MAINNET},
-
-        {SCRIPT_USDC02_TRANSFER_USDC, TEMPLATE_HASH_USDC02_TRANSFER_USDC_TESTNET},
-        {SCRIPT_USDC02_TRANSFER_USDC, TEMPLATE_HASH_USDC02_TRANSFER_USDC_MAINNET},
-
-        {SCRIPT_SCO03_REGISTER_NODE, TEMPLATE_HASH_SCO0302_REGISTER_NODE_TESTNET},
-        {SCRIPT_SCO03_REGISTER_NODE, TEMPLATE_HASH_SCO0302_REGISTER_NODE_MAINNET},
-
-        {SCRIPT_SCO04_CREATE_MACHINE_ACCOUNT, TEMPLATE_HASH_SCO0402_CREATE_MACHINE_ACCOUNT_TESTNET},
-        {SCRIPT_SCO04_CREATE_MACHINE_ACCOUNT, TEMPLATE_HASH_SCO0402_CREATE_MACHINE_ACCOUNT_MAINNET},
-
-        // sentinel, do not remove
-        {0, NULL}};
-
-    int i = 0;
-    while (KNOWN_TYPES[i].template) {
-        if (MEMCMP((char *) (PIC(KNOWN_TYPES[i].template)), buffer, 64) == 0) {
-            *scriptType = KNOWN_TYPES[i].script_type;
-            return PARSER_OK;
-        }
-        i++;
-    }
-
-    return PARSER_UNEXPECTED_SCRIPT;
-}
-
-parser_error_t _readScript(parser_context_t *c, flow_script_t *v) {
+parser_error_t _readScript(parser_context_t *c,
+                           flow_script_hash_t *s,
+                           script_parsed_elements_t *e,
+                           script_parsed_type_t scriptType) {
     rlp_kind_e kind;
+    parser_context_t script;
     uint32_t bytesConsumed;
 
-    MEMZERO(v, sizeof(flow_script_t));
-
-    CHECK_PARSER_ERR(rlp_decode(c, &v->ctx, &kind, &bytesConsumed));
+    CHECK_PARSER_ERR(rlp_decode(c, &script, &kind, &bytesConsumed));
     CTX_CHECK_AND_ADVANCE(c, bytesConsumed)
     CHECK_KIND(kind, RLP_KIND_STRING)
 
-    MEMZERO(v->digest, sizeof(v->digest));
-    sha256(v->ctx.buffer, v->ctx.bufferLen, v->digest);
+    MEMZERO(s->digest, sizeof(s->digest));
+    sha256(script.buffer, script.bufferLen, s->digest);
 
-    CHECK_PARSER_ERR(_matchScriptType(v->digest, &v->type))
+    MEMZERO(e, sizeof(*e));
+    e->script_type = SCRIPT_TYPE_UNKNOWN;
+    switch (scriptType) {
+        case SCRIPT_TYPE_NFT_SETUP_COLLECTION:
+            if (!parseNFT1(e, script.buffer, script.bufferLen)) {
+                return PARSER_UNEXPECTED_SCRIPT;
+            }
+            break;
+        case SCRIPT_TYPE_NFT_TRANSFER:
+            if (!parseNFT2(e, script.buffer, script.bufferLen)) {
+                return PARSER_UNEXPECTED_SCRIPT;
+            }
+            break;
+        case SCRIPT_TYPE_UNKNOWN:
+            break;
+        default:
+            return PARSER_UNEXPECTED_ERROR;
+    }
 
     return PARSER_OK;
 }
@@ -713,7 +579,7 @@ parser_error_t _readProposalAuthorizers(parser_context_t *c, flow_proposal_autho
     return PARSER_OK;
 }
 
-parser_error_t _read(parser_context_t *c, parser_tx_t *v) {
+parser_error_t _read(parser_context_t *c, parser_tx_t *v, script_parsed_type_t scriptType) {
     rlp_kind_e kind;
     uint32_t bytesConsumed;
 
@@ -735,7 +601,7 @@ parser_error_t _read(parser_context_t *c, parser_tx_t *v) {
     CHECK_KIND(kind, RLP_KIND_LIST)
 
     // Go through the inner list
-    CHECK_PARSER_ERR(_readScript(&ctx_rootInnerList, &v->script))
+    CHECK_PARSER_ERR(_readScript(&ctx_rootInnerList, &v->hash, &v->parsedScript, scriptType))
     CHECK_PARSER_ERR(_readArguments(&ctx_rootInnerList, &v->arguments))
     CHECK_PARSER_ERR(_readReferenceBlockId(&ctx_rootInnerList, &v->referenceBlockId))
     CHECK_PARSER_ERR(_readGasLimit(&ctx_rootInnerList, &v->gasLimit))
@@ -764,6 +630,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, __Z_UNUSED cons
 
 parser_error_t _countArgumentItems(const flow_argument_list_t *v,
                                    uint8_t argumentIndex,
+                                   uint8_t min_number_of_items,
                                    uint8_t max_number_of_items,
                                    uint8_t *number_of_items) {
     *number_of_items = 0;
@@ -783,7 +650,7 @@ parser_error_t _countArgumentItems(const flow_argument_list_t *v,
     uint16_t arrayTokenCount;
     CHECK_PARSER_ERR(
         array_get_element_count(&parsedJson, internalTokenElementIdx, &arrayTokenCount));
-    if (arrayTokenCount > max_number_of_items) {
+    if (arrayTokenCount < min_number_of_items || arrayTokenCount > max_number_of_items) {
         return PARSER_UNEXPECTED_NUMBER_ITEMS;
     }
 
@@ -794,6 +661,7 @@ parser_error_t _countArgumentItems(const flow_argument_list_t *v,
 // if Optional is null, number_of_items is set to 1 as one screen is needed to display "None"
 parser_error_t _countArgumentOptionalItems(const flow_argument_list_t *v,
                                            uint8_t argumentIndex,
+                                           uint8_t min_number_of_items,
                                            uint8_t max_number_of_items,
                                            uint8_t *number_of_items) {
     *number_of_items = 0;
@@ -817,7 +685,7 @@ parser_error_t _countArgumentOptionalItems(const flow_argument_list_t *v,
     uint16_t arrayTokenCount;
     CHECK_PARSER_ERR(
         array_get_element_count(&parsedJson, internalTokenElementIdx, &arrayTokenCount));
-    if (arrayTokenCount > max_number_of_items) {
+    if (arrayTokenCount < min_number_of_items || arrayTokenCount > max_number_of_items) {
         return PARSER_UNEXPECTED_NUMBER_ITEMS;
     }
 
@@ -825,169 +693,10 @@ parser_error_t _countArgumentOptionalItems(const flow_argument_list_t *v,
     return PARSER_OK;
 }
 
-parser_error_t _getNumItems(__Z_UNUSED const parser_context_t *c,
-                            const parser_tx_t *v,
-                            uint8_t *numItems) {
-    uint8_t argArrayLength = 0;
-
-    uint8_t show_address_yes =
-        (show_address == SHOW_ADDRESS_YES || show_address == SHOW_ADDRESS_YES_HASH_MISMATCH);
-    uint8_t extraItems = v->authorizers.authorizer_count;
-    extraItems += (show_address_yes && !addressUsedInTx) ? 1 : 0;
-    extraItems += (show_address == SHOW_ADDRESS_YES_HASH_MISMATCH) ? 1 : 0;
-    extraItems += show_address_yes ? 0 : 1;
-    extraItems += app_mode_expert() ? 1 : 0;
-
-    switch (v->script.type) {
-        case SCRIPT_TOKEN_TRANSFER:
-            *numItems = 10 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_CREATE_ACCOUNT:
-            // array length is checked while we are parsing it
-            CHECK_PARSER_ERR(_countArgumentItems(&v->arguments, 0, UINT8_MAX, &argArrayLength))
-            *numItems = 8 + argArrayLength + extraItems;
-            return PARSER_OK;
-        case SCRIPT_ADD_NEW_KEY:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH01_WITHDRAW_UNLOCKED_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH02_DEPOSIT_UNLOCKED_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH06_REGISTER_NODE:
-            *numItems = 14 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH08_STAKE_NEW_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH09_RESTAKE_UNSTAKED_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH10_RESTAKE_REWARDED_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH11_UNSTAKE_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH12_UNSTAKE_ALL_TOKENS:
-            *numItems = 8 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH13_WITHDRAW_UNSTAKED_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH14_WITHDRAW_REWARDED_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH16_REGISTER_OPERATOR_NODE:
-            *numItems = 11 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH17_REGISTER_DELEGATOR:
-            *numItems = 10 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH19_DELEGATE_NEW_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH20_RESTAKE_UNSTAKED_DELEGATED_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH21_RESTAKE_REWARDED_DELEGATED_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH22_UNSTAKE_DELEGATED_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH23_WITHDRAW_UNSTAKED_DELEGATED_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH24_WITHDRAW_REWARDED_DELEGATED_TOKENS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TH25_UPDATE_NETWORKING_ADDRESS:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO01_SETUP_STAKING_COLLECTION:
-            *numItems = 8 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO02_REGISTER_DELEGATOR:
-            *numItems = 10 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO03_REGISTER_NODE:
-            // array length is checked while we are parsing it
-            CHECK_PARSER_ERR(
-                _countArgumentOptionalItems(&v->arguments, 6, UINT8_MAX, &argArrayLength));
-            *numItems = 14 + argArrayLength + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO04_CREATE_MACHINE_ACCOUNT:
-            // array length is checked while we are parsing it
-            CHECK_PARSER_ERR(_countArgumentItems(&v->arguments, 1, UINT8_MAX, &argArrayLength))
-            *numItems = 9 + argArrayLength + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO05_REQUEST_UNSTAKING:
-            *numItems = 11 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO06_STAKE_NEW_TOKENS:
-            *numItems = 11 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO07_STAKE_REWARD_TOKENS:
-            *numItems = 11 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO08_STAKE_UNSTAKED_TOKENS:
-            *numItems = 11 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO09_UNSTAKE_ALL:
-            *numItems = 9 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO10_WITHDRAW_REWARD_TOKENS:
-            *numItems = 11 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO11_WITHDRAW_UNSTAKED_TOKENS:
-            *numItems = 11 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO12_CLOSE_STAKE:
-            *numItems = 10 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO13_TRANSFER_NODE:
-            *numItems = 10 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO14_TRANSFER_DELEGATOR:
-            *numItems = 11 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO15_WITHDRAW_FROM_MACHINE_ACCOUNT:
-            *numItems = 10 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_SCO16_UPDATE_NETWORKING_ADDRESS:
-            *numItems = 10 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_FUSD01_SETUP_FUSD_VAULT:
-            *numItems = 8 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_FUSD02_TRANSFER_FUSD:
-            *numItems = 10 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TS01_SET_UP_TOPSHOT_COLLECTION:
-            *numItems = 8 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_TS02_TRANSFER_TOP_SHOT_MOMENT:
-            *numItems = 10 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_USDC01_SETUP_USDC_VAULT:
-            *numItems = 8 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_USDC02_TRANSFER_USDC:
-            *numItems = 10 + extraItems;
-            return PARSER_OK;
-        case SCRIPT_UNKNOWN:
-        default:
-            return PARSER_UNEXPECTED_SCRIPT;
-    }
-}
-
 void checkAddressUsedInTx() {
     addressUsedInTx = 0;
-    int authCount = parser_tx_obj.authorizers.authorizer_count;
-    for (int i = 0; i < authCount + 2; i++) {  //+2 for proposer and payer
+    uint16_t authCount = parser_tx_obj.authorizers.authorizer_count;
+    for (uint16_t i = 0; i < (uint16_t)(authCount + 2); i++) {  //+2 for proposer and payer
         parser_context_t *ctx = &parser_tx_obj.payer.ctx;
         if (i == authCount) ctx = &parser_tx_obj.proposalKeyAddress.ctx;
         if (i < authCount) ctx = &parser_tx_obj.authorizers.authorizer[i].ctx;
@@ -1000,4 +709,10 @@ void checkAddressUsedInTx() {
             }
         }
     }
+}
+
+parser_error_t parseMetadata() {
+    MEMZERO(&parser_tx_obj.metadata, sizeof(parser_tx_obj.metadata));
+    CHECK_PARSER_ERR(parseTxMetadata(parser_tx_obj.hash.digest, &parser_tx_obj.metadata));
+    return PARSER_OK;
 }
