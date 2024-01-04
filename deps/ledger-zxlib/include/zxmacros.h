@@ -97,7 +97,7 @@ if( os_global_pin_is_validated() != BOLOS_UX_OK ) { \
 }
 
 #if (defined (TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX))
-#if (ZEMU_LOGGING)
+#if defined(ZEMU_LOGGING)
 __Z_INLINE void zemu_log(const char *buf)
 {
 /*
