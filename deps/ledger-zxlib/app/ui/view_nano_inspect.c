@@ -20,6 +20,7 @@
 #include "view_internal.h"
 #include "view_templates.h"
 #include "view_nano.h"
+#include "zxmacros.h"
 
 void h_inspect_init() {
     ZEMU_LOGF(50, "h_inspect_init\n")
@@ -41,14 +42,12 @@ void view_inspect_init(viewfunc_getInnerItem_t view_funcGetInnerItem,
 }
 
 bool h_paging_inspect_go_to_root_screen() {
-    return (viewdata.innerField.level >= 0) &&
-           (viewdata.innerField.paging.itemIdx == 0)
+    return (viewdata.innerField.paging.itemIdx == 0)
            && (viewdata.innerField.trace[0] != 0);
 }
 
 bool h_paging_inspect_back_screen() {
-    return (viewdata.innerField.level >= 0) &&
-           (viewdata.innerField.paging.itemIdx == (viewdata.innerField.paging.itemCount - 1))
+    return (viewdata.innerField.paging.itemIdx == (viewdata.innerField.paging.itemCount - 1))
             && (viewdata.innerField.trace[0] != 0);
 }
 

@@ -130,9 +130,7 @@ endif
 ########################################
 
 ifeq ($(DEBUG),1)
-DEFINES += ZEMU_LOGGING=1
-else
-DEFINES += ZEMU_LOGGING=0
+DEFINES += ZEMU_LOGGING
 endif
 
 #########################
