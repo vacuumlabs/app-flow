@@ -37,7 +37,9 @@ class P1(IntEnum):
 class P2(IntEnum):
     """ Parameter 2 definitions """
     # Parameter 2 for SIGN P1_LAST
-    P2_NO_METADATA = 0x01
+    P2_ARBITRARY = 0x01
+    P2_NFT1 = 0x02
+    P2_NFT2 = 0x03
     # Parameter 2 P2_MORE.
     P2_MORE = 0x80
 
@@ -261,13 +263,34 @@ class FlowCommandSender:
                                             p1=P1.P1_LAST_MESSAGE,
                                             data=messages[-1]) as response:
                 yield response
+        elif hint == "arbitrary":
+            with self.backend.exchange_async(cla=ClaType.CLA_APP,
+                                            ins=InsType.SIGN,
+                                            p1=P1.P1_LAST,
+                                            p2=P2.P2_ARBITRARY,
+                                            data=messages[-1]) as response:
+                yield response
+        elif hint == "nft1":
+            with self.backend.exchange_async(cla=ClaType.CLA_APP,
+                                            ins=InsType.SIGN,
+                                            p1=P1.P1_LAST,
+                                            p2=P2.P2_NFT1,
+                                            data=messages[-1]) as response:
+                yield response
+        elif hint == "nft2":
+            with self.backend.exchange_async(cla=ClaType.CLA_APP,
+                                            ins=InsType.SIGN,
+                                            p1=P1.P1_LAST,
+                                            p2=P2.P2_NFT2,
+                                            data=messages[-1]) as response:
+                yield response
         else:
             merkleI = merkleIndex.get(hint[0:16], None)
             if merkleI is None:
                 with self.backend.exchange_async(cla=ClaType.CLA_APP,
                                                 ins=InsType.SIGN,
                                                 p1=P1.P1_LAST,
-                                                p2=P2.P2_NO_METADATA,
+                                                p2=P2.P2_ARBITRARY,
                                                 data=messages[-1]) as response:
                     yield response
             else:
