@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 
-from application_client.flow_command_sender import FlowCommandSender, Errors, HashType
+from application_client.flow_command_sender import FlowCommandSender, Errors, HashType, ClaType, InsType, P1, P2
 from application_client.flow_response_unpacker import unpack_sign_tx_response
 
 from ragger.bip import CurveChoice
@@ -50,6 +50,82 @@ def _check_transaction(
     _, der_sig = unpack_sign_tx_response(response.data)
     # Check the signature
     util_check_signature(public_key, der_sig, message, curve, hash_t, signable_type)
+
+
+def test_transaction_metadata_errors(firmware, backend, navigator, test_name):
+    """ Check transaction signing with different parameters """
+
+    # Use the app interface instead of raw interface
+    client = FlowCommandSender(backend)
+    # Test parameters
+    def send_tx_body() -> None:
+        dataToSend: List[bytes]= [
+            bytes.fromhex("2c0000801b0200800102008000000000000000000103"),
+            bytes.fromhex("f9023ff9023bb90195696d706f72742046756e6769626c65546f6b656e2066726f6d203078656538323835366266323065326161360a7472616e73616374696f6e28616d6f756e743a205546697836342c20746f3a204164647265737329207b0a6c6574207661756c743a204046756e6769626c65546f6b656e2e5661756c740a70726570617265287369676e65723a20417574684163636f756e7429207b0a73656c662e7661756c74203c2d207369676e65720a2e626f72726f773c267b46756e6769626c65546f6b656e2e50726f76696465727d3e2866726f6d3a202f73746f726167652f666c6f77546f6b656e5661756c7429210a2e776974686472"),
+            bytes.fromhex("617728616d6f756e743a20616d6f756e74290a7d0a65786563757465207b0a6765744163636f756e7428746f290a2e6765744361706162696c697479282f7075626c69632f666c6f77546f6b656e526563656976657229210a2e626f72726f773c267b46756e6769626c65546f6b656e2e52656365697665727d3e2829210a2e6465706f7369742866726f6d3a203c2d73656c662e7661756c74290a7d0a7df861b07b2274797065223a22554669783634222c2276616c7565223a223138343436373434303733372e39353531363135227daf7b2274797065223a2241646472657373222c2276616c7565223a223078663864366530353836623061323063"),
+            bytes.fromhex("37227da0f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b2a88f8d6e0586b0a20c7040a88f8d6e0586b0a20c7c988f8d6e0586b0a20c7c0"),
+        ]
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_INIT, data=dataToSend[0])
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_ADD, data=dataToSend[1])
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_ADD, data=dataToSend[2])
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_ADD, data=dataToSend[3])
+
+    correctMetadata: bytes = bytes.fromhex("03ca80b628d985b358ae1cb136bcd976997c942fa10dbabfeafb4e20fa66a5a5e2d56f4e1d2355cdcfacfd01e471459c6ef168bfdf84371a685ccf31cf3cdedc2d47851586d962335e3f7d9e5d11a4c527ee4b5fd1c3895e3ce1b9c2821f60b166546f6b656e205472616e73666572000201416d6f756e74000055466978363400030144657374696e6174696f6e0001416464726573730003")
+    correctProof: List[bytes]= [
+        bytes.fromhex("27b42f7104fa842ba664b1c199325f8339dd65db575938cef8498d082727c3efcaf67b7d0995d18f289676386108de6b4c134059b000a6f1ec0c80b857b0ec380c538359a1be1553e729aad363de4eec2dcdcc666320eb85899c2f978c5fbf94033592e53bc3280098d0043e4770cfaf7675a56b9c56d836a5e2252de61dc3a85f7f784ed0a40905ed96c8b96588a84b025eb04d593a7662bb66b9eb3a7e962a12c65f0494d2165cbeaa141d705647d8071b528999782dd54a84a44ad2cf3d7b6730cd08974b8ccd1102dd2f5159a8181cc1ede512f6d537d8eea46556e16944"),
+        bytes.fromhex("aa44049d7eb26d667c3714b8fcf78380878e658e22268510ff9f72e69b29decda0affd7f78688c482a5a5bc416fa49f5844288fc61b0ee1b40cd38e3c2fbeb36a1b4c2165e1fceba7324712485844e04e5e955706ae328f6cfd64c49686a8104d0b4592fc4f996b16fea83ab8dede757ea8bc270f4e1fbf2301e02fd38d175e3c9967fd752058341822bc98880abb34e04d3afef58de0e256f2264991e54812353b33a3b57dd772b1dff0636374eb01bc7839efd7677d32399380c37f9a2d03604b126988dc8f00c41d922c13e0ae5a4e7d83f18b44935103cdbbd7c2229d53f"),
+        bytes.fromhex("07ea7f7407fda8657a35aeb24075cc654b9f06ae61d6cd1a772920ee3c6209a188bd487007bf1a5be47cea944d797895181258aba33c77e8c75fe7e38ad9192988bd487007bf1a5be47cea944d797895181258aba33c77e8c75fe7e38ad9192988bd487007bf1a5be47cea944d797895181258aba33c77e8c75fe7e38ad9192988bd487007bf1a5be47cea944d797895181258aba33c77e8c75fe7e38ad9192988bd487007bf1a5be47cea944d797895181258aba33c77e8c75fe7e38ad9192988bd487007bf1a5be47cea944d797895181258aba33c77e8c75fe7e38ad91929"),
+        bytes.fromhex("9053a0e87b7e66413b6552205fa31f3c2ed42cdb97bd3d543a130aebb29dda1e94a4bf5f458f2def50f807bf419501bfd5e77a084c30592aa3803a522a3c272e94a4bf5f458f2def50f807bf419501bfd5e77a084c30592aa3803a522a3c272e94a4bf5f458f2def50f807bf419501bfd5e77a084c30592aa3803a522a3c272e94a4bf5f458f2def50f807bf419501bfd5e77a084c30592aa3803a522a3c272e94a4bf5f458f2def50f807bf419501bfd5e77a084c30592aa3803a522a3c272e94a4bf5f458f2def50f807bf419501bfd5e77a084c30592aa3803a522a3c272e"),
+    ]
+        
+    # Test metadata not matching the transaction
+    otherMetadata: bytes = bytes.fromhex("330203004001595c86561441b32b2b91ee03f9e10ca6efa7b41bcc994f51317ec0aa9d8f8a42416464204e6577204b6579000101507562206b65790000537472696e670003")
+    # Proof in correctProof is correct
+    send_tx_body()
+    with pytest.raises(ExceptionRAPDU) as err:
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_METADATA, data=otherMetadata)
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_ONGOING, data=correctProof[0])
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_ONGOING, data=correctProof[1])
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_ONGOING, data=correctProof[2])
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_LAST, data=correctProof[3])
+    assert err.value.status == Errors.SW_DATA_INVALID
+
+    # Test error in first proof step
+    wrongProofStep: bytes = bytes.fromhex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    send_tx_body()
+    with pytest.raises(ExceptionRAPDU) as err:
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_METADATA, data=correctMetadata)
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_ONGOING, data=wrongProofStep)
+    assert err.value.status == Errors.SW_DATA_INVALID
+
+    # Test error in second proof
+    send_tx_body()
+    backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_METADATA, data=correctMetadata)
+    backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_ONGOING, data=correctProof[0])
+    with pytest.raises(ExceptionRAPDU) as err2:
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_ONGOING, data=wrongProofStep)
+    assert err2.value.status == Errors.SW_DATA_INVALID
+
+    # Error in the last step
+    send_tx_body()
+    backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_METADATA, data=correctMetadata)
+    backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_ONGOING, data=correctProof[0])
+    backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_ONGOING, data=correctProof[1])
+    backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_ONGOING, data=correctProof[2])
+    with pytest.raises(ExceptionRAPDU) as err:
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_LAST, data=wrongProofStep)
+    assert err.value.status == Errors.SW_DATA_INVALID
+
+    # Error comparing final hashes, last yte different
+    wrongLastProofStep: bytes = bytes.fromhex("9053a0e87b7e66413b6552205fa31f3c2ed42cdb97bd3d543a130aebb29dda1e94a4bf5f458f2def50f807bf419501bfd5e77a084c30592aa3803a522a3c272e94a4bf5f458f2def50f807bf419501bfd5e77a084c30592aa3803a522a3c272e94a4bf5f458f2def50f807bf419501bfd5e77a084c30592aa3803a522a3c272e94a4bf5f458f2def50f807bf419501bfd5e77a084c30592aa3803a522a3c272e94a4bf5f458f2def50f807bf419501bfd5e77a084c30592aa3803a522a3c272e94a4bf5f458f2def50f807bf419501bfd5e77a084c30592aa3803a522a3c272f")
+    send_tx_body()
+    backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_METADATA, data=correctMetadata)
+    backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_ONGOING, data=correctProof[0])
+    backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_ONGOING, data=correctProof[1])
+    backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_ONGOING, data=correctProof[2])
+    with pytest.raises(ExceptionRAPDU) as err:
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_PROOF_LAST, data=wrongLastProofStep)
+    assert err.value.status == Errors.SW_DATA_INVALID
 
 
 def test_transaction_params(firmware, backend, navigator, test_name):
