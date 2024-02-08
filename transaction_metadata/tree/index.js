@@ -177,7 +177,7 @@ const TX_METADATA_TOKEN_TRANSFER = getMetadataFromCMetadata([
 ]);
 
 
-const metadataManifest = readManifest("manifest.testnet.json", "manifest.mainnet.json");
+const metadataManifest = readManifest("../manifest.testnet.json", "../manifest.mainnet.json");
 const txMetadata = [TX_METADATA_CREATE_ACCOUNT, TX_METADATA_ADD_NEW_KEY, TX_METADATA_TOKEN_TRANSFER, ...metadataManifest]
 
 //We add empty metadata strings so we have 7^MERKLE_TREE_DEPTH elementes in the field
@@ -251,11 +251,11 @@ const data = "" +
     "export const merkleTree = " + JSON.stringify(merkleTree, null, 2) + "\n\n" +
     "export const merkleIndex = " + JSON.stringify(merkleIndex, null, 2) + "\n\n";
 
-fs.writeFileSync("txMerkleTree.js", data);
+fs.writeFileSync("../txMerkleTree.js", data);
 
 const data2 = "# pylint: skip-file\n" +
     "merkleTree = " + JSON.stringify(merkleTree, null, 2) + "\n\n" +
     "merkleIndex = " + JSON.stringify(merkleIndex, null, 2) + "\n\n";
 
-fs.writeFileSync("txMerkleTree.py", data2);
+fs.writeFileSync("../txMerkleTree.py", data2);
 
