@@ -308,6 +308,7 @@ const createPayloadTestcase = (valid) => {
     encodedTransactionPayloadHex: encodeTransactionPayload(x[1]),	
     encodedTransactionEnvelopeHex: encodeTransactionEnvelope({ ...x[1], payloadSigs: [] }),
     metadata: getMerkleTreeElement(merkleIndex[x[3].substring(0, 16)]),
+    hash: x[3],
   });
 };
 
@@ -321,6 +322,7 @@ const createEnvelopeTestcase = (valid) => {
     encodedTransactionPayloadHex: encodeTransactionPayload(x[1]),	
     encodedTransactionEnvelopeHex: encodeTransactionEnvelope({ ...x[1], payloadSigs: [] }),
     metadata: getMerkleTreeElement(merkleIndex[x[3].substring(0, 16)]),
+    hash: x[3],
   });
 };
 
