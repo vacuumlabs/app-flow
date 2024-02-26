@@ -33,7 +33,6 @@
 #include "hdpath.h"
 #include "parser_impl.h"
 #include "message.h"
-#include "script_parser.h"
 
 __Z_INLINE void handleGetPubkey(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     hasPubkey = false;
@@ -113,8 +112,6 @@ __Z_INLINE void handleSign(volatile uint32_t *flags, volatile uint32_t *tx, uint
             view_review_show(REVIEW_TXN);
             *flags |= IO_ASYNCH_REPLY;
             break;
-        case PROCESS_CHUNK_FINISHED_NFT1:
-        case PROCESS_CHUNK_FINISHED_NFT2:
         case PROCESS_CHUNK_FINISHED_NO_METADATA:
         case PROCESS_CHUNK_FINISHED_WITH_METADATA:;
             zemu_log("Processing chunks finished, sign transaction.\n");

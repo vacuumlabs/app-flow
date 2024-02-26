@@ -43,10 +43,9 @@
 
 parser_error_t parser_parse(parser_context_t *ctx,
                             const uint8_t *data,
-                            size_t dataLen,
-                            script_parsed_type_t scriptType) {
+                            size_t dataLen) {
     CHECK_PARSER_ERR(parser_init(ctx, data, dataLen))
-    return _read(ctx, &parser_tx_obj, scriptType);
+    return _read(ctx, &parser_tx_obj);
 }
 
 parser_error_t parser_validate(const parser_context_t *ctx) {
@@ -738,299 +737,28 @@ parser_error_t parser_getItem_internal(int8_t *displayIdx,
         (*pageCount = 1))
 
     if (parser_tx_obj.metadataInitialized) {
+        // Known transaction
         SCREEN(true) {
             snprintf(outKey, outKeyLen, "Type");
             snprintf(outVal, outValLen, "%s", parser_tx_obj.metadata.txName);
             return PARSER_OK;
         }
     } else {
-        const char storageString[] = "/storage/";
-        const char publicString[] = "/public/";
-        const size_t storageStringLength = sizeof(storageString) - 1;
-        const size_t publicStringLength = sizeof(publicString) - 1;
-        switch (parser_tx_obj.parsedScript.script_type) {
-            case SCRIPT_TYPE_NFT_SETUP_COLLECTION: {
-                // validate basic assumptions on the script
-                if (parser_tx_obj.parsedScript.elements_count != PARSED_ELEMENTS_NFT1_COUNT) {
-                    return PARSER_UNEXPECTED_ERROR;
-                }
-                // storagePath should be preceded with "/storage/" - double checking before
-                // displaying it
-                _Static_assert(PARSED_ELEMENTS_NFT1_STORAGE_PATH >= 1, "Script index error");
-                bool enoughSpaceForStorageString =
-                    (parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT1_STORAGE_PATH].data >=
-                     parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT1_STORAGE_PATH - 1]
-                             .data +
-                         storageStringLength);
-                if (!enoughSpaceForStorageString) {
-                    return PARSER_UNEXPECTED_ERROR;
-                }
-                if (memcmp(parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT1_STORAGE_PATH]
-                                   .data -
-                               storageStringLength,
-                           storageString,
-                           storageStringLength)) {
-                    return PARSER_UNEXPECTED_ERROR;
-                }
-                // publicCollectionContractName and publicCollectionName should be separated by a
-                // single '.' - double checking before displaying it
-                _Static_assert(PARSED_ELEMENTS_NFT1_PUBLIC_COLLECTION_CONTRACT_NAME + 1 ==
-                                   PARSED_ELEMENTS_NFT1_PUBLIC_COLLECTION_NAME,
-                               "Script index error");
-                if (parser_tx_obj.parsedScript
-                            .elements[PARSED_ELEMENTS_NFT1_PUBLIC_COLLECTION_CONTRACT_NAME]
-                            .data +
-                        parser_tx_obj.parsedScript
-                            .elements[PARSED_ELEMENTS_NFT1_PUBLIC_COLLECTION_CONTRACT_NAME]
-                            .length +
-                        1 !=
-                    parser_tx_obj.parsedScript.elements[8].data) {
-                    return PARSER_UNEXPECTED_ERROR;
-                }
-                size_t expectedDotIndex =
-                    parser_tx_obj.parsedScript
-                        .elements[PARSED_ELEMENTS_NFT1_PUBLIC_COLLECTION_CONTRACT_NAME]
-                        .length;
-                if (parser_tx_obj.parsedScript
-                        .elements[PARSED_ELEMENTS_NFT1_PUBLIC_COLLECTION_CONTRACT_NAME]
-                        .data[expectedDotIndex] != '.') {
-                    return PARSER_UNEXPECTED_ERROR;
-                }
-
-                // publicPath should be preceded with "/public/" - double checking before
-                // displaying it
-                _Static_assert(PARSED_ELEMENTS_NFT1_PUBLIC_PATH >= 1, "Script index error");
-                bool enoughSpaceForPublicString =
-                    (parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT1_PUBLIC_PATH].data >=
-                     parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT1_PUBLIC_PATH - 1]
-                             .data +
-                         publicStringLength);
-                if (!enoughSpaceForPublicString) {
-                    return PARSER_UNEXPECTED_ERROR;
-                }
-                if (memcmp(
-                        parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT1_PUBLIC_PATH].data -
-                            publicStringLength,
-                        publicString,
-                        publicStringLength)) {
-                    return PARSER_UNEXPECTED_ERROR;
-                }
-
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Set Up NFT");
-                    snprintf(outVal, outValLen, "Collection");
-                    return PARSER_OK;
-                }
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Contract Name");
-                    pageStringExt(
-                        outVal,
-                        outValLen,
-                        (const char *) parser_tx_obj.parsedScript
-                            .elements[PARSED_ELEMENTS_NFT1_CONTRACT_NAME]
-                            .data,
-                        parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT1_CONTRACT_NAME]
-                            .length,
-                        pageIdx,
-                        pageCount);
-                    return PARSER_OK;
-                }
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Contract Address");
-                    pageStringExt(
-                        outVal,
-                        outValLen,
-                        (const char *) parser_tx_obj.parsedScript
-                            .elements[PARSED_ELEMENTS_NFT1_CONTRACT_ADDRESS]
-                            .data,
-                        parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT1_CONTRACT_ADDRESS]
-                            .length,
-                        pageIdx,
-                        pageCount);
-                    return PARSER_OK;
-                }
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Storage Path");
-                    pageStringExt(
-                        outVal,
-                        outValLen,
-                        (const char *) parser_tx_obj.parsedScript
-                                .elements[PARSED_ELEMENTS_NFT1_STORAGE_PATH]
-                                .data -
-                            storageStringLength,
-                        parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT1_STORAGE_PATH]
-                                .length +
-                            storageStringLength,
-                        pageIdx,
-                        pageCount);
-                    return PARSER_OK;
-                }
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Public Coll. Name");
-                    pageStringExt(
-                        outVal,
-                        outValLen,
-                        (const char *) parser_tx_obj.parsedScript
-                            .elements[PARSED_ELEMENTS_NFT1_PUBLIC_COLLECTION_CONTRACT_NAME]
-                            .data,
-                        parser_tx_obj.parsedScript
-                                .elements[PARSED_ELEMENTS_NFT1_PUBLIC_COLLECTION_CONTRACT_NAME]
-                                .length +
-                            parser_tx_obj.parsedScript
-                                .elements[PARSED_ELEMENTS_NFT1_PUBLIC_COLLECTION_NAME]
-                                .length +
-                            1,
-                        pageIdx,
-                        pageCount);
-                    return PARSER_OK;
-                }
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Public Path");
-                    pageStringExt(
-                        outVal,
-                        outValLen,
-                        (const char *) parser_tx_obj.parsedScript
-                                .elements[PARSED_ELEMENTS_NFT1_PUBLIC_PATH]
-                                .data -
-                            publicStringLength,
-                        parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT1_PUBLIC_PATH]
-                                .length +
-                            publicStringLength,
-                        pageIdx,
-                        pageCount);
-                    return PARSER_OK;
-                }
-                break;
-            }
-            case SCRIPT_TYPE_NFT_TRANSFER: {
-                // validate basic assumptions on the script
-                if (parser_tx_obj.parsedScript.elements_count != PARSED_ELEMENTS_NFT2_COUNT) {
-                    return PARSER_UNEXPECTED_ERROR;
-                }
-                // storagePath should be preceded with "/storage/" - double checking before
-                // displaying it
-                _Static_assert(PARSED_ELEMENTS_NFT2_STORAGE_PATH >= 1, "Script index error");
-                bool enoughSpaceForStorageString =
-                    (parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT2_STORAGE_PATH].data >=
-                     parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT2_STORAGE_PATH - 1]
-                             .data +
-                         storageStringLength);
-                if (!enoughSpaceForStorageString) {
-                    return PARSER_UNEXPECTED_ERROR;
-                }
-                if (memcmp(parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT2_STORAGE_PATH]
-                                   .data -
-                               storageStringLength,
-                           storageString,
-                           storageStringLength)) {
-                    return PARSER_UNEXPECTED_ERROR;
-                }
-                // publicPath should be preceded with "/public/" - double checking before
-                // displaying it
-                _Static_assert(PARSED_ELEMENTS_NFT2_PUBLIC_PATH >= 1, "Script index error");
-                bool enoughSpaceForPublicString =
-                    (parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT2_PUBLIC_PATH].data >=
-                     parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT2_PUBLIC_PATH - 1]
-                             .data +
-                         publicStringLength);
-                if (!enoughSpaceForPublicString) {
-                    return PARSER_UNEXPECTED_ERROR;
-                }
-                if (memcmp(
-                        parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT2_PUBLIC_PATH].data -
-                            publicStringLength,
-                        publicString,
-                        publicStringLength)) {
-                    return PARSER_UNEXPECTED_ERROR;
-                }
-
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Transfer NFT");
-                    snprintf(outVal, outValLen, "");
-                    return PARSER_OK;
-                }
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Contract Name");
-                    pageStringExt(
-                        outVal,
-                        outValLen,
-                        (const char *) parser_tx_obj.parsedScript
-                            .elements[PARSED_ELEMENTS_NFT2_CONTRACT_NAME]
-                            .data,
-                        parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT2_CONTRACT_NAME]
-                            .length,
-                        pageIdx,
-                        pageCount);
-                    return PARSER_OK;
-                }
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Contract Address");
-                    pageStringExt(
-                        outVal,
-                        outValLen,
-                        (const char *) parser_tx_obj.parsedScript
-                            .elements[PARSED_ELEMENTS_NFT2_CONTRACT_ADDRESS]
-                            .data,
-                        parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT2_CONTRACT_ADDRESS]
-                            .length,
-                        pageIdx,
-                        pageCount);
-                    return PARSER_OK;
-                }
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Storage Path");
-                    pageStringExt(
-                        outVal,
-                        outValLen,
-                        (const char *) parser_tx_obj.parsedScript
-                                .elements[PARSED_ELEMENTS_NFT2_STORAGE_PATH]
-                                .data -
-                            storageStringLength,
-                        parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT2_STORAGE_PATH]
-                                .length +
-                            storageStringLength,
-                        pageIdx,
-                        pageCount);
-                    return PARSER_OK;
-                }
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Public Path");
-                    pageStringExt(
-                        outVal,
-                        outValLen,
-                        (const char *) parser_tx_obj.parsedScript
-                                .elements[PARSED_ELEMENTS_NFT2_PUBLIC_PATH]
-                                .data -
-                            publicStringLength,
-                        parser_tx_obj.parsedScript.elements[PARSED_ELEMENTS_NFT2_PUBLIC_PATH]
-                                .length +
-                            publicStringLength,
-                        pageIdx,
-                        pageCount);
-                    return PARSER_OK;
-                }
-                break;
-            }
-            case SCRIPT_TYPE_UNKNOWN: {
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Script hash");
-                    pageStringHex(outVal,
-                                  outValLen,
-                                  (const char *) parser_tx_obj.hash.digest,
-                                  sizeof(parser_tx_obj.hash.digest),
-                                  pageIdx,
-                                  pageCount);
-                    return PARSER_OK;
-                }
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Verify script hash");
-                    snprintf(outVal, outValLen, "on a secure device.");
-                    return PARSER_OK;
-                }
-                break;
-            }
-            default:
-                return PARSER_UNEXPECTED_ERROR;
+        // Arbitrary message signing
+        SCREEN(true) {
+            snprintf(outKey, outKeyLen, "Script hash");
+            pageStringHex(outVal,
+                            outValLen,
+                            (const char *) parser_tx_obj.hash.digest,
+                            sizeof(parser_tx_obj.hash.digest),
+                            pageIdx,
+                            pageCount);
+            return PARSER_OK;
+        }
+        SCREEN(true) {
+            snprintf(outKey, outKeyLen, "Verify script hash");
+            snprintf(outVal, outValLen, "on a secure device.");
+            return PARSER_OK;
         }
     }
 
@@ -1127,91 +855,49 @@ parser_error_t parser_getItem_internal(int8_t *displayIdx,
             }
         }
     } else {  // No metadata
-        switch (parser_tx_obj.parsedScript.script_type) {
-            case SCRIPT_TYPE_NFT_SETUP_COLLECTION:
-                if (parser_tx_obj.arguments.argCount != 0) {
-                    return PARSER_UNEXPECTED_NUMBER_ITEMS;
-                }
-                break;
-
-            case SCRIPT_TYPE_NFT_TRANSFER:
-                if (parser_tx_obj.arguments.argCount != 2) {
-                    return PARSER_UNEXPECTED_NUMBER_ITEMS;
-                }
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Recipient");
-                    parser_printArgument(&parser_tx_obj.arguments,
-                                         0,
-                                         "Address",
-                                         JSMN_STRING,
-                                         outVal,
-                                         outValLen,
-                                         pageIdx,
-                                         pageCount);
-                    return PARSER_OK;
-                }
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Token Id");
-                    parser_printArgument(&parser_tx_obj.arguments,
-                                         1,
-                                         "UInt64",
-                                         JSMN_STRING,
-                                         outVal,
-                                         outValLen,
-                                         pageIdx,
-                                         pageCount);
-                    return PARSER_OK;
-                }
-                break;
-
-            case SCRIPT_TYPE_UNKNOWN:
-                SCREEN(true) {
-                    snprintf(outKey, outKeyLen, "Script arguments");
-                    snprintf(outVal,
-                             outValLen,
-                             "Number of arguments: %d",
-                             parser_tx_obj.arguments.argCount);
-                    return PARSER_OK;
-                }
-                for (size_t i = 0; i < parser_tx_obj.arguments.argCount; i++) {
-                    uint16_t flags = 0;
-                    uint16_t jsonToken = 0;
-                    CHECK_PARSER_ERR(parser_printArbitraryPrepareToDisplay(&parser_tx_obj.arguments,
-                                                                           i,
-                                                                           &flags,
-                                                                           &jsonToken));
+        SCREEN(true) {
+            snprintf(outKey, outKeyLen, "Script arguments");
+            snprintf(outVal,
+                        outValLen,
+                        "Number of arguments: %d",
+                        parser_tx_obj.arguments.argCount);
+            return PARSER_OK;
+        }
+        for (size_t i = 0; i < parser_tx_obj.arguments.argCount; i++) {
+            uint16_t flags = 0;
+            uint16_t jsonToken = 0;
+            CHECK_PARSER_ERR(parser_printArbitraryPrepareToDisplay(&parser_tx_obj.arguments,
+                                                                    i,
+                                                                    &flags,
+                                                                    &jsonToken));
+            SCREEN(true) {
+                return parser_printArbitraryArgumentFirstScreen(&parser_tx_obj.arguments,
+                                                                i,
+                                                                flags,
+                                                                jsonToken,
+                                                                outKey,
+                                                                outKeyLen,
+                                                                outVal,
+                                                                outValLen,
+                                                                pageIdx,
+                                                                pageCount);
+            }
+            if (flags & FLAG_IS_ARRAY) {
+                for (size_t j = 0; j < (flags & FLAGS_FURTHER_SCREENS); j++) {
                     SCREEN(true) {
-                        return parser_printArbitraryArgumentFirstScreen(&parser_tx_obj.arguments,
-                                                                        i,
-                                                                        flags,
-                                                                        jsonToken,
-                                                                        outKey,
-                                                                        outKeyLen,
-                                                                        outVal,
-                                                                        outValLen,
-                                                                        pageIdx,
-                                                                        pageCount);
-                    }
-                    if (flags & FLAG_IS_ARRAY) {
-                        for (size_t j = 0; j < (flags & FLAGS_FURTHER_SCREENS); j++) {
-                            SCREEN(true) {
-                                return parser_printArbitraryArrayElements(&parser_tx_obj.arguments,
-                                                                          i,
-                                                                          j,
-                                                                          jsonToken,
-                                                                          outKey,
-                                                                          outKeyLen,
-                                                                          outVal,
-                                                                          outValLen,
-                                                                          pageIdx,
-                                                                          pageCount);
-                            }
-                        }
+                        return parser_printArbitraryArrayElements(&parser_tx_obj.arguments,
+                                                                    i,
+                                                                    j,
+                                                                    jsonToken,
+                                                                    outKey,
+                                                                    outKeyLen,
+                                                                    outVal,
+                                                                    outValLen,
+                                                                    pageIdx,
+                                                                    pageCount);
                     }
                 }
-                break;
-            default:
-                return PARSER_UNEXPECTED_ERROR;
+            }
         }
     }
 

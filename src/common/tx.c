@@ -76,12 +76,8 @@ uint8_t *tx_get_buffer() {
 }
 
 const char *tx_parse(process_chunk_response_t typeOfCall) {
-    script_parsed_type_t scriptType =
-        (typeOfCall == PROCESS_CHUNK_FINISHED_NFT1)   ? SCRIPT_TYPE_NFT_SETUP_COLLECTION
-        : (typeOfCall == PROCESS_CHUNK_FINISHED_NFT2) ? SCRIPT_TYPE_NFT_TRANSFER
-                                                      : SCRIPT_TYPE_UNKNOWN;
     // parse tx
-    uint8_t err = parser_parse(&ctx_parsed_tx, tx_get_buffer(), tx_get_buffer_length(), scriptType);
+    uint8_t err = parser_parse(&ctx_parsed_tx, tx_get_buffer(), tx_get_buffer_length());
 
     if (err != PARSER_OK) {
         ZEMU_TRACE();
@@ -100,9 +96,6 @@ const char *tx_parse(process_chunk_response_t typeOfCall) {
             }
             parser_tx_obj.metadataInitialized = true;
             break;
-        case PROCESS_CHUNK_FINISHED_NFT1:
-        case PROCESS_CHUNK_FINISHED_NFT2:
-            break;  // we do not need metadata for these scripts
         case PROCESS_CHUNK_FINISHED_NO_METADATA:
             if (!app_mode_expert()) {  // we do not need metadata for these scripts, but this
                                        // workflow should work only in expert mode

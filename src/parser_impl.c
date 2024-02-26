@@ -394,9 +394,7 @@ parser_error_t formatStrUInt8AsHex(const char *decStr, char *hexStr) {
 }
 
 parser_error_t _readScript(parser_context_t *c,
-                           flow_script_hash_t *s,
-                           script_parsed_elements_t *e,
-                           script_parsed_type_t scriptType) {
+                           flow_script_hash_t *s) {
     rlp_kind_e kind;
     parser_context_t script;
     uint32_t bytesConsumed;
@@ -407,25 +405,6 @@ parser_error_t _readScript(parser_context_t *c,
 
     MEMZERO(s->digest, sizeof(s->digest));
     sha256(script.buffer, script.bufferLen, s->digest);
-
-    MEMZERO(e, sizeof(*e));
-    e->script_type = SCRIPT_TYPE_UNKNOWN;
-    switch (scriptType) {
-        case SCRIPT_TYPE_NFT_SETUP_COLLECTION:
-            if (!parseNFT1(e, script.buffer, script.bufferLen)) {
-                return PARSER_UNEXPECTED_SCRIPT;
-            }
-            break;
-        case SCRIPT_TYPE_NFT_TRANSFER:
-            if (!parseNFT2(e, script.buffer, script.bufferLen)) {
-                return PARSER_UNEXPECTED_SCRIPT;
-            }
-            break;
-        case SCRIPT_TYPE_UNKNOWN:
-            break;
-        default:
-            return PARSER_UNEXPECTED_ERROR;
-    }
 
     return PARSER_OK;
 }
@@ -579,7 +558,7 @@ parser_error_t _readProposalAuthorizers(parser_context_t *c, flow_proposal_autho
     return PARSER_OK;
 }
 
-parser_error_t _read(parser_context_t *c, parser_tx_t *v, script_parsed_type_t scriptType) {
+parser_error_t _read(parser_context_t *c, parser_tx_t *v) {
     rlp_kind_e kind;
     uint32_t bytesConsumed;
 
@@ -601,7 +580,7 @@ parser_error_t _read(parser_context_t *c, parser_tx_t *v, script_parsed_type_t s
     CHECK_KIND(kind, RLP_KIND_LIST)
 
     // Go through the inner list
-    CHECK_PARSER_ERR(_readScript(&ctx_rootInnerList, &v->hash, &v->parsedScript, scriptType))
+    CHECK_PARSER_ERR(_readScript(&ctx_rootInnerList, &v->hash))
     CHECK_PARSER_ERR(_readArguments(&ctx_rootInnerList, &v->arguments))
     CHECK_PARSER_ERR(_readReferenceBlockId(&ctx_rootInnerList, &v->referenceBlockId))
     CHECK_PARSER_ERR(_readGasLimit(&ctx_rootInnerList, &v->gasLimit))

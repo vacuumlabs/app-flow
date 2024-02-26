@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 
-from application_client.flow_command_sender import FlowCommandSender, Errors, HashType, ClaType, InsType, P1, P2
+from application_client.flow_command_sender import FlowCommandSender, Errors, HashType, ClaType, InsType, P1
 from application_client.flow_response_unpacker import unpack_sign_tx_response
 
 from ragger.bip import CurveChoice

@@ -1,6 +1,6 @@
 import pytest
 
-from application_client.flow_command_sender import ClaType, InsType, P1, P2, Errors
+from application_client.flow_command_sender import ClaType, InsType, P1, Errors
 
 from ragger.error import ExceptionRAPDU
 
@@ -21,11 +21,11 @@ def test_bad_ins(backend):
     assert err.value.status == Errors.SW_INS_NOT_SUPPORTED
 
 
-def test_wrong_p1p2(backend):
-    """ Ensure the app returns an error when a bad P1 or P2 is used """
+def test_wrong_p1(backend):
+    """ Ensure the app returns an error when a bad P1 is used """
 
     with pytest.raises(ExceptionRAPDU) as err:
-        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_LAST + 1, p2=P2.P2_MORE)
+        backend.exchange(cla=ClaType.CLA_APP, ins=InsType.SIGN, p1=P1.P1_LAST_MESSAGE + 1)
     assert err.value.status == Errors.SW_INVALIDP1P2
 
 

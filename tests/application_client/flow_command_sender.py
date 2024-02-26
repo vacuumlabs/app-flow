@@ -28,20 +28,11 @@ class P1(IntEnum):
     # Parameter 1 for SIGN.
     P1_INIT = 0x00
     P1_ADD  = 0x01
-    P1_LAST = 0x02
+    P1_LAST_ARBITRARY = 0x02
     P1_METADATA = 0x03
     P1_PROOF_ONGOING = 0x04
     P1_PROOF_LAST = 0x05
     P1_LAST_MESSAGE = 0x10
-
-class P2(IntEnum):
-    """ Parameter 2 definitions """
-    # Parameter 2 for SIGN P1_LAST
-    P2_ARBITRARY = 0x01
-    P2_NFT1 = 0x02
-    P2_NFT2 = 0x03
-    # Parameter 2 P2_MORE.
-    P2_MORE = 0x80
 
 class InsType(IntEnum):
     """ Application Command ID definitions """
@@ -266,22 +257,7 @@ class FlowCommandSender:
         elif hint == "arbitrary":
             with self.backend.exchange_async(cla=ClaType.CLA_APP,
                                             ins=InsType.SIGN,
-                                            p1=P1.P1_LAST,
-                                            p2=P2.P2_ARBITRARY,
-                                            data=messages[-1]) as response:
-                yield response
-        elif hint == "nft1":
-            with self.backend.exchange_async(cla=ClaType.CLA_APP,
-                                            ins=InsType.SIGN,
-                                            p1=P1.P1_LAST,
-                                            p2=P2.P2_NFT1,
-                                            data=messages[-1]) as response:
-                yield response
-        elif hint == "nft2":
-            with self.backend.exchange_async(cla=ClaType.CLA_APP,
-                                            ins=InsType.SIGN,
-                                            p1=P1.P1_LAST,
-                                            p2=P2.P2_NFT2,
+                                            p1=P1.P1_LAST_ARBITRARY,
                                             data=messages[-1]) as response:
                 yield response
         else:
@@ -289,8 +265,7 @@ class FlowCommandSender:
             if merkleI is None:
                 with self.backend.exchange_async(cla=ClaType.CLA_APP,
                                                 ins=InsType.SIGN,
-                                                p1=P1.P1_LAST,
-                                                p2=P2.P2_ARBITRARY,
+                                                p1=P1.P1_LAST_ARBITRARY,
                                                 data=messages[-1]) as response:
                     yield response
             else:
