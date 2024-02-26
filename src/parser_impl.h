@@ -41,13 +41,6 @@ parser_error_t _countArgumentItems(const flow_argument_list_t *v,
                                    uint8_t max_number_of_items,
                                    uint8_t *number_of_items);
 
-// Same as _countArgumentItems, but the array is optional.
-parser_error_t _countArgumentOptionalItems(const flow_argument_list_t *v,
-                                           uint8_t argumentIndex,
-                                           uint8_t min_number_of_items,
-                                           uint8_t max_number_of_items,
-                                           uint8_t *number_of_items);
-
 parser_error_t json_validateToken(const parsed_json_t *parsedJson, uint16_t tokenIdx);
 
 parser_error_t json_extractToken(char *outVal,
@@ -73,10 +66,6 @@ parser_error_t json_matchOptionalKeyValue(const parsed_json_t *parsedJson,
                                           const char *expectedType,
                                           jsmntype_t jsonType,
                                           uint16_t *valueTokenIdx);
-
-parser_error_t json_matchOptionalArray(const parsed_json_t *parsedJson,
-                                       uint16_t tokenIdx,
-                                       uint16_t *valueTokenIdx);
 
 parser_error_t json_matchArbitraryKeyValue(const parsed_json_t *parsedJson,
                                            uint16_t tokenIdx,

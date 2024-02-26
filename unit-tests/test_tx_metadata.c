@@ -47,7 +47,7 @@ const uint8_t TX_METADATA_TOKEN_TRANSFER[] = {
     2,  //number of arguments
 
     //Argument 1
-    ARGUMENT_TYPE_OPTIONALARRAY, 5, 10,
+    ARGUMENT_TYPE_ARRAY, 5, 10,
     'A', 'm', 'o', 'u', 'n', 't', 0, //arg name (to display)
     0, //argument index
     'U','I', 'n', 't', '6', '4',  0, //expected value type
@@ -122,7 +122,7 @@ static void test_parseCompressedTxData(void **state) {
     assert_string_equal(result.txName, "Token Transfer");
     assert_int_equal(result.txNameLength, 14);
     assert_int_equal(result.argCount, 2);
-    assert_int_equal(result.arguments[0].argumentType, ARGUMENT_TYPE_OPTIONALARRAY);
+    assert_int_equal(result.arguments[0].argumentType, ARGUMENT_TYPE_ARRAY);
     assert_int_equal(result.arguments[0].arrayMinElements, 5);
     assert_int_equal(result.arguments[0].arrayMaxElements, 10);
     assert_string_equal(result.arguments[0].displayKey, "Amount");

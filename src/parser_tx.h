@@ -27,9 +27,7 @@ extern "C" {
 const char *parser_getErrorDescription(parser_error_t err);
 
 //// parses a tx buffer
-parser_error_t parser_parse(parser_context_t *ctx,
-                            const uint8_t *data,
-                            size_t dataLen);
+parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t dataLen);
 
 //// verifies tx fields
 parser_error_t parser_validate(const parser_context_t *ctx);
@@ -76,16 +74,6 @@ parser_error_t parser_printArgumentArray(const flow_argument_list_t *v,
                                          uint16_t outValLen,
                                          uint8_t pageIdx,
                                          uint8_t *pageCount);
-
-parser_error_t parser_printArgumentOptionalArray(const flow_argument_list_t *v,
-                                                 uint8_t argIndex,
-                                                 uint8_t arrayIndex,
-                                                 const char *expectedType,
-                                                 jsmntype_t jsonType,
-                                                 char *outVal,
-                                                 uint16_t outValLen,
-                                                 uint8_t pageIdx,
-                                                 uint8_t *pageCount);
 
 parser_error_t parser_printArbitraryPrepareToDisplay(const flow_argument_list_t *v,
                                                      uint8_t argIndex,

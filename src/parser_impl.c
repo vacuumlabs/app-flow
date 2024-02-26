@@ -293,50 +293,6 @@ parser_error_t json_matchOptionalKeyValue(const parsed_json_t *parsedJson,
     return PARSER_UNEXPECTED_VALUE;
 }
 
-// valueTokenIdx is JSON_MATCH_VALUE_IDX_NONE if the optional is null
-parser_error_t json_matchOptionalArray(const parsed_json_t *parsedJson,
-                                       uint16_t tokenIdx,
-                                       uint16_t *valueTokenIdx) {
-    CHECK_PARSER_ERR(json_validateToken(parsedJson, tokenIdx))
-
-    if (!(tokenIdx + 4 < parsedJson->numberOfTokens)) {
-        // we need this token and 4 more
-        return PARSER_JSON_INVALID_TOKEN_IDX;
-    }
-
-    if (parsedJson->tokens[tokenIdx].type != JSMN_OBJECT) {
-        return PARSER_UNEXPECTED_TYPE;
-    }
-
-    if (parsedJson->tokens[tokenIdx].size != 2) {
-        return PARSER_UNEXPECTED_NUMBER_ITEMS;
-    }
-
-    // Type key/value
-    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 1, (char *) "type"))
-    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 2, (char *) "Optional"))
-    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 3, (char *) "value"))
-    if (parsedJson->tokens[tokenIdx + 4].type == JSMN_PRIMITIVE) {  // optional null
-        CHECK_PARSER_ERR(json_matchNull(parsedJson, tokenIdx + 4))
-        *valueTokenIdx = JSON_MATCH_VALUE_IDX_NONE;
-        return PARSER_OK;
-    }
-    if (parsedJson->tokens[tokenIdx + 4].type == JSMN_OBJECT) {  // optional not null
-        if (!(tokenIdx + 8 < parsedJson->numberOfTokens)) {
-            return PARSER_JSON_INVALID_TOKEN_IDX;
-        }
-        CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 5, (char *) "type"))
-        CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 6, (char *) "Array"))
-        CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 7, (char *) "value"))
-        if (parsedJson->tokens[tokenIdx + 8].type == JSMN_ARRAY) {
-            *valueTokenIdx = tokenIdx + 8;
-            return PARSER_OK;
-        }
-    }
-
-    return PARSER_UNEXPECTED_VALUE;
-}
-
 parser_error_t json_matchArbitraryKeyValue(const parsed_json_t *parsedJson,
                                            uint16_t tokenIdx,
                                            jsmntype_t *valueJsonType,
@@ -393,8 +349,7 @@ parser_error_t formatStrUInt8AsHex(const char *decStr, char *hexStr) {
     return PARSER_OK;
 }
 
-parser_error_t _readScript(parser_context_t *c,
-                           flow_script_hash_t *s) {
+parser_error_t _readScript(parser_context_t *c, flow_script_hash_t *s) {
     rlp_kind_e kind;
     parser_context_t script;
     uint32_t bytesConsumed;
@@ -626,41 +581,6 @@ parser_error_t _countArgumentItems(const flow_argument_list_t *v,
     uint16_t internalTokenElementIdx;
     CHECK_PARSER_ERR(
         json_matchKeyValue(&parsedJson, 0, (char *) "Array", JSMN_ARRAY, &internalTokenElementIdx));
-    uint16_t arrayTokenCount;
-    CHECK_PARSER_ERR(
-        array_get_element_count(&parsedJson, internalTokenElementIdx, &arrayTokenCount));
-    if (arrayTokenCount < min_number_of_items || arrayTokenCount > max_number_of_items) {
-        return PARSER_UNEXPECTED_NUMBER_ITEMS;
-    }
-
-    *number_of_items = arrayTokenCount;
-    return PARSER_OK;
-}
-
-// if Optional is null, number_of_items is set to 1 as one screen is needed to display "None"
-parser_error_t _countArgumentOptionalItems(const flow_argument_list_t *v,
-                                           uint8_t argumentIndex,
-                                           uint8_t min_number_of_items,
-                                           uint8_t max_number_of_items,
-                                           uint8_t *number_of_items) {
-    *number_of_items = 0;
-    parsed_json_t parsedJson = {false};
-
-    if (argumentIndex >= v->argCount) {
-        return PARSER_UNEXPECTED_FIELD;
-    }
-
-    const parser_context_t argCtx = v->argCtx[argumentIndex];
-    CHECK_PARSER_ERR(json_parse(&parsedJson, (char *) argCtx.buffer, argCtx.bufferLen));
-
-    uint16_t internalTokenElementIdx;
-    CHECK_PARSER_ERR(json_matchOptionalArray(&parsedJson, 0, &internalTokenElementIdx));
-    if (internalTokenElementIdx == JSON_MATCH_VALUE_IDX_NONE) {
-        *number_of_items = 1;
-        return PARSER_OK;
-    }
-
-    // Get number of items
     uint16_t arrayTokenCount;
     CHECK_PARSER_ERR(
         array_get_element_count(&parsedJson, internalTokenElementIdx, &arrayTokenCount));

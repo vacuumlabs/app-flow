@@ -42,7 +42,6 @@ include_directories(../deps/jsmn/src)
 
 add_executable(test_rlp test_rlp.c)
 add_executable(test_tx_metadata test_tx_metadata.c)
-add_executable(test_script_parser test_script_parser.c)
 
 add_library(base58 SHARED $ENV{BOLOS_SDK}/lib_standard_app/base58.c)
 add_library(bip32 SHARED $ENV{BOLOS_SDK}/lib_standard_app/bip32.c)
@@ -53,7 +52,6 @@ add_library(format SHARED $ENV{BOLOS_SDK}/lib_standard_app/format.c)
 add_library(varint SHARED $ENV{BOLOS_SDK}/lib_standard_app/varint.c)
 add_library(apdu_parser SHARED $ENV{BOLOS_SDK}/lib_standard_app/parser.c)
 add_library(rlp ../src/rlp.c)
-add_library(script_parser ../src/script_parser.c)
 add_library(tx_metadata ../src/tx_metadata.c)
 add_library(hexutils ../deps/ledger-zxlib/src/hexutils.c)
 add_library(sha256mock utils/sha256.c)
@@ -70,11 +68,5 @@ target_link_libraries(test_tx_metadata PUBLIC
                       tx_metadata
                       sha256mock)
 
-target_link_libraries(test_script_parser PUBLIC
-                      cmocka
-                      gcov
-                      script_parser)
-
 add_test(test_rlp test_rlp)
 add_test(test_tx_metadata test_tx_metadata)
-add_test(test_script_parser test_script_parser)

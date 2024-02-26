@@ -169,10 +169,14 @@ static parser_error_t parseTxMetadataInternal(const uint8_t scriptHash[METADATA_
         _Static_assert(sizeof(parsedTxMetadata->arguments) >= PARSER_MAX_ARGCOUNT,
                        "Too few arguments in parsed_tx_metadata_t.");
         for (int i = 0; i < parsedTxMetadata->argCount; i++) {
-            READ_CHAR(&parsedTxMetadata->arguments[i].argumentType);
-            argument_type_e argumentType = parsedTxMetadata->arguments[i].argumentType;
-            if (argumentType == ARGUMENT_TYPE_ARRAY ||
-                argumentType == ARGUMENT_TYPE_OPTIONALARRAY) {
+            uint8_t argumentType = 0;
+            READ_CHAR(&argumentType);
+            if (argumentType != ARGUMENT_TYPE_NORMAL && argumentType != ARGUMENT_TYPE_OPTIONAL &&
+                argumentType != ARGUMENT_TYPE_ARRAY) {
+                return PARSER_METADATA_ERROR;
+            }
+            parsedTxMetadata->arguments[i].argumentType = argumentType;
+            if (argumentType == ARGUMENT_TYPE_ARRAY) {
                 READ_CHAR(&parsedTxMetadata->arguments[i].arrayMinElements);
                 READ_CHAR(&parsedTxMetadata->arguments[i].arrayMaxElements);
                 uint8_t min = parsedTxMetadata->arguments[i].arrayMinElements;

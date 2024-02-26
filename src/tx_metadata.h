@@ -29,7 +29,6 @@ typedef enum {
     ARGUMENT_TYPE_NORMAL = 1,
     ARGUMENT_TYPE_OPTIONAL = 2,
     ARGUMENT_TYPE_ARRAY = 3,
-    ARGUMENT_TYPE_OPTIONALARRAY = 4
 } argument_type_e;
 
 #define PARSER_MAX_ARGCOUNT          9
