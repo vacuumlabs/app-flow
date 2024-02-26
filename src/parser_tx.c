@@ -308,6 +308,7 @@ parser_error_t parser_printArgumentOptionalArray(const flow_argument_list_t *v,
     CHECK_PARSER_ERR(json_matchOptionalArray(&parsedJson, 0, &internalTokenElementIdx));
     if (internalTokenElementIdx == JSON_MATCH_VALUE_IDX_NONE) {
         if (outValLen < 5) {
+            ZEMU_TRACE();
             return PARSER_UNEXPECTED_BUFFER_END;
         }
         *pageCount = 1;
@@ -317,6 +318,7 @@ parser_error_t parser_printArgumentOptionalArray(const flow_argument_list_t *v,
         CHECK_PARSER_ERR(
             array_get_element_count(&parsedJson, internalTokenElementIdx, &arrayTokenCount));
         if (arrayTokenCount >= MAX_JSON_ARRAY_TOKEN_COUNT || arrayIndex >= arrayTokenCount) {
+            ZEMU_TRACE();
             return PARSER_UNEXPECTED_NUMBER_ITEMS;
         }
 
@@ -338,6 +340,7 @@ parser_error_t parser_printArgumentOptionalArray(const flow_argument_list_t *v,
 
         // Check requested page is in range
         if (pageIdx > *pageCount) {
+            ZEMU_TRACE();
             return PARSER_DISPLAY_PAGE_OUT_OF_RANGE;
         }
     }
@@ -710,8 +713,6 @@ parser_error_t parser_getItem_internal(int8_t *displayIdx,
                                        uint16_t outValLen,
                                        uint8_t pageIdx,
                                        uint8_t *pageCount) {
-    zemu_log_stack("parser_getItem_internal");
-
     // validate contract
     if ((*displayIdx) >= 0) {
         if (outKey == NULL || outVal == NULL || pageCount == NULL) {
@@ -1051,6 +1052,7 @@ parser_error_t parser_getItem_internal(int8_t *displayIdx,
             switch (marg->argumentType) {
                 case ARGUMENT_TYPE_NORMAL:
                     SCREEN(true) {
+                        zemu_log("Argument normal\n");
                         snprintf(outKey, outKeyLen, "%s", marg->displayKey);
                         return parser_printArgument(&parser_tx_obj.arguments,
                                                     marg->argumentIndex,
@@ -1064,6 +1066,7 @@ parser_error_t parser_getItem_internal(int8_t *displayIdx,
                     break;
                 case ARGUMENT_TYPE_OPTIONAL:
                     SCREEN(true) {
+                        zemu_log("Argument optional\n");
                         snprintf(outKey, outKeyLen, "%s", marg->displayKey);
                         return parser_printOptionalArgument(&parser_tx_obj.arguments,
                                                             marg->argumentIndex,
@@ -1076,6 +1079,7 @@ parser_error_t parser_getItem_internal(int8_t *displayIdx,
                     }
                     break;
                 case ARGUMENT_TYPE_ARRAY:
+                    zemu_log("Argument array\n");
                     CHECK_PARSER_ERR(_countArgumentItems(&parser_tx_obj.arguments,
                                                          marg->argumentIndex,
                                                          marg->arrayMinElements,
@@ -1097,6 +1101,7 @@ parser_error_t parser_getItem_internal(int8_t *displayIdx,
                     }
                     break;
                 case ARGUMENT_TYPE_OPTIONALARRAY:
+                    zemu_log("Argument optional array\n");
                     CHECK_PARSER_ERR(_countArgumentOptionalItems(&parser_tx_obj.arguments,
                                                                  marg->argumentIndex,
                                                                  marg->arrayMinElements,

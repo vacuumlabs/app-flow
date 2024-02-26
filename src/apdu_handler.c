@@ -105,6 +105,7 @@ __Z_INLINE void handleSign(volatile uint32_t *flags, volatile uint32_t *tx, uint
                 int error_msg_length = strlen(error_msg);
                 MEMCPY(G_io_apdu_buffer, error_msg, error_msg_length);
                 *tx += (error_msg_length);
+                ZEMU_TRACE();
                 THROW(APDU_CODE_DATA_INVALID);
             }
             CHECK_APP_CANARY()
@@ -116,12 +117,15 @@ __Z_INLINE void handleSign(volatile uint32_t *flags, volatile uint32_t *tx, uint
         case PROCESS_CHUNK_FINISHED_NFT2:
         case PROCESS_CHUNK_FINISHED_NO_METADATA:
         case PROCESS_CHUNK_FINISHED_WITH_METADATA:;
+            zemu_log("Processing chunks finished, sign transaction.\n");
             const char *error_msg = tx_parse(callType);
 
             if (error_msg != NULL) {
                 int error_msg_length = strlen(error_msg);
                 MEMCPY(G_io_apdu_buffer, error_msg, error_msg_length);
                 *tx += (error_msg_length);
+                ZEMU_TRACE();
+                zemu_log(error_msg);
                 THROW(APDU_CODE_DATA_INVALID);
             }
             show_address = SHOW_ADDRESS_NONE;

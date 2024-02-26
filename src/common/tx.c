@@ -84,6 +84,7 @@ const char *tx_parse(process_chunk_response_t typeOfCall) {
     uint8_t err = parser_parse(&ctx_parsed_tx, tx_get_buffer(), tx_get_buffer_length(), scriptType);
 
     if (err != PARSER_OK) {
+        ZEMU_TRACE();
         return parser_getErrorDescription(err);
     }
 
@@ -94,6 +95,7 @@ const char *tx_parse(process_chunk_response_t typeOfCall) {
             MEMZERO(&parser_tx_obj.metadata, sizeof(parser_tx_obj.metadata));
             err = parseTxMetadata(parser_tx_obj.hash.digest, &parser_tx_obj.metadata);
             if (err != PARSER_OK) {
+                ZEMU_TRACE();
                 return parser_getErrorDescription(err);
             }
             parser_tx_obj.metadataInitialized = true;
@@ -104,10 +106,12 @@ const char *tx_parse(process_chunk_response_t typeOfCall) {
         case PROCESS_CHUNK_FINISHED_NO_METADATA:
             if (!app_mode_expert()) {  // we do not need metadata for these scripts, but this
                                        // workflow should work only in expert mode
+                ZEMU_TRACE();
                 return parser_getErrorDescription(PARSER_UNEXPECTED_SCRIPT);
             }
             break;
         default:
+            ZEMU_TRACE();
             return parser_getErrorDescription(PARSER_UNEXPECTED_ERROR);
     }
 
@@ -116,6 +120,7 @@ const char *tx_parse(process_chunk_response_t typeOfCall) {
     // validate
     err = parser_validate(&ctx_parsed_tx);
     if (err != PARSER_OK) {
+        ZEMU_TRACE();
         return parser_getErrorDescription(err);
     }
 

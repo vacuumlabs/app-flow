@@ -26,7 +26,10 @@ extern "C" {
     {                                         \
         parser_error_t __err = __CALL;        \
         CHECK_APP_CANARY()                    \
-        if (__err != PARSER_OK) return __err; \
+        if (__err != PARSER_OK) {             \
+            ZEMU_TRACE();                     \
+            return __err;                     \
+        }                                     \
     }
 
 #define CTX_CHECK_AND_ADVANCE(CTX, SIZE) \
