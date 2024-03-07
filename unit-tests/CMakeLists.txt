@@ -42,6 +42,7 @@ include_directories(../deps/jsmn/src)
 
 add_executable(test_rlp test_rlp.c)
 add_executable(test_tx_metadata test_tx_metadata.c)
+add_executable(test_parser parser.c)
 
 add_library(base58 SHARED $ENV{BOLOS_SDK}/lib_standard_app/base58.c)
 add_library(bip32 SHARED $ENV{BOLOS_SDK}/lib_standard_app/bip32.c)
@@ -55,6 +56,11 @@ add_library(rlp ../src/rlp.c)
 add_library(tx_metadata ../src/tx_metadata.c)
 add_library(hexutils ../deps/ledger-zxlib/src/hexutils.c)
 add_library(sha256mock utils/sha256.c)
+add_library(parser_tx ../src/parser_tx.c)
+add_library(parser_impl ../src/parser_impl.c)
+add_library(json_parser ../src/json/json_parser.c)
+add_library(jsmn ../deps/jsmn/src/jsmn.c)
+add_library(hdpath ../src/hdpath.c)
 
 target_link_libraries(test_rlp PUBLIC
                       cmocka
@@ -68,5 +74,19 @@ target_link_libraries(test_tx_metadata PUBLIC
                       tx_metadata
                       sha256mock)
 
+target_link_libraries(test_parser PUBLIC
+                      cmocka
+                      gcov
+                      parser_tx
+                      parser_impl
+                      tx_metadata
+                      rlp
+                      json_parser
+                      jsmn
+                      hdpath
+                      sha256mock)
+
 add_test(test_rlp test_rlp)
 add_test(test_tx_metadata test_tx_metadata)
+add_test(test_parser test_parser)
+

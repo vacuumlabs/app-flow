@@ -192,7 +192,7 @@ parser_error_t json_matchToken(const parsed_json_t *parsedJson,
         return PARSER_UNEXPECTED_TYPE;
     }
 
-    if (token.end < token.start || strlen(expectedValue) != (size_t)(token.end - token.start)) {
+    if (token.end < token.start || strlen(expectedValue) != (size_t) (token.end - token.start)) {
         return PARSER_UNEXPECTED_VALUE;
     }
 
@@ -211,7 +211,7 @@ parser_error_t json_matchNull(const parsed_json_t *parsedJson, uint16_t tokenIdx
         return PARSER_UNEXPECTED_TYPE;
     }
 
-    if (token.end < token.start || 4 != (size_t)(token.end - token.start)) {
+    if (token.end < token.start || 4 != (size_t) (token.end - token.start)) {
         return PARSER_UNEXPECTED_VALUE;
     }
 
@@ -299,30 +299,22 @@ parser_error_t json_matchArbitraryKeyValue(const parsed_json_t *parsedJson,
                                            uint16_t *keyTokenIdx,
                                            uint16_t *valueTokenIdx) {
     CHECK_PARSER_ERR(json_validateToken(parsedJson, tokenIdx))
-
-    if (!(tokenIdx + 4 < parsedJson->numberOfTokens)) {
-        // we need this token and 4 more
-        return PARSER_JSON_INVALID_TOKEN_IDX;
-    }
-
     if (parsedJson->tokens[tokenIdx].type != JSMN_OBJECT) {
+        return PARSER_JSON_INVALID;
+    }
+    uint16_t objectElements = 0;
+    CHECK_PARSER_ERR(object_get_element_count(parsedJson, tokenIdx, &objectElements));
+    if (objectElements != 2) {
+        return PARSER_JSON_INVALID;
+    }
+
+    CHECK_PARSER_ERR(object_get_value(parsedJson, tokenIdx, "type", keyTokenIdx));
+    CHECK_PARSER_ERR(object_get_value(parsedJson, tokenIdx, "value", valueTokenIdx));
+
+    if (parsedJson->tokens[*keyTokenIdx].type != JSMN_STRING) {
         return PARSER_UNEXPECTED_TYPE;
     }
-
-    if (parsedJson->tokens[tokenIdx].size != 2) {
-        return PARSER_UNEXPECTED_NUMBER_ITEMS;
-    }
-
-    // Type key/value
-    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 1, (char *) "type"))
-    if (parsedJson->tokens[tokenIdx + 2].type != JSMN_STRING) {
-        return PARSER_UNEXPECTED_TYPE;
-    }
-    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 3, (char *) "value"))
-
-    *keyTokenIdx = tokenIdx + 2;
-    *valueJsonType = parsedJson->tokens[tokenIdx + 4].type;
-    *valueTokenIdx = tokenIdx + 4;
+    *valueJsonType = parsedJson->tokens[*valueTokenIdx].type;
 
     return PARSER_OK;
 }
@@ -595,7 +587,7 @@ parser_error_t _countArgumentItems(const flow_argument_list_t *v,
 void checkAddressUsedInTx() {
     addressUsedInTx = 0;
     uint16_t authCount = parser_tx_obj.authorizers.authorizer_count;
-    for (uint16_t i = 0; i < (uint16_t)(authCount + 2); i++) {  //+2 for proposer and payer
+    for (uint16_t i = 0; i < (uint16_t) (authCount + 2); i++) {  //+2 for proposer and payer
         parser_context_t *ctx = &parser_tx_obj.payer.ctx;
         if (i == authCount) ctx = &parser_tx_obj.proposalKeyAddress.ctx;
         if (i < authCount) ctx = &parser_tx_obj.authorizers.authorizer[i].ctx;

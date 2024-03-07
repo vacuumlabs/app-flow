@@ -280,19 +280,14 @@ parser_error_t parser_printArgumentArray(const flow_argument_list_t *v,
     return PARSER_OK;
 }
 
-#define FLAG_IS_NONE              0x1000
-#define FLAG_IS_OPTIONAL_NOT_NONE 0x2000
-#define FLAG_IS_ARRAY             0x4000
-#define FLAGS_FURTHER_SCREENS     0x0FFF
-// jsonToken points to thing that is going to be displayed:
-//     JSMN_ARRAY that contains actual array if it is an array or optional array,
-//     root JSMN_OBJECT it is optional none or non-optional scalar argument
-//     nested JSMN_OBJECT for optional scalar arguments
-// The function validates json till jsonToken (excluded) but guarantees jsonToken type
-parser_error_t parser_printArbitraryPrepareToDisplay(const flow_argument_list_t *v,
-                                                     uint8_t argIndex,
-                                                     uint16_t *flags,
-                                                     uint16_t *jsonToken) {
+parser_error_t parser_printArbitraryArgument(const flow_argument_list_t *v,
+                                             uint8_t argIndex,
+                                             char *outKey,
+                                             uint16_t outKeyLen,
+                                             char *outVal,
+                                             uint16_t outValLen,
+                                             uint8_t pageIdx,
+                                             uint8_t *pageCount) {
     if (argIndex >= v->argCount) {
         return PARSER_UNEXPECTED_NUMBER_ITEMS;
     }
@@ -301,206 +296,49 @@ parser_error_t parser_printArbitraryPrepareToDisplay(const flow_argument_list_t 
     CHECK_PARSER_ERR(json_parse(&parsedJson,
                                 (char *) v->argCtx[argIndex].buffer,
                                 v->argCtx[argIndex].bufferLen));
-
-    jsmntype_t valueJsonType = JSMN_UNDEFINED;
-    uint16_t keyTokenElementIdx = 0;
-    uint16_t valueTokenElementIdx = 0;
-    CHECK_PARSER_ERR(json_matchArbitraryKeyValue(&parsedJson,
-                                                 0,
-                                                 &valueJsonType,
-                                                 &keyTokenElementIdx,
-                                                 &valueTokenElementIdx));
-
-    const uint16_t baseValueTokenIndex = valueTokenElementIdx;
-
-    switch (valueJsonType) {
-        case JSMN_ARRAY:  // array
-            CHECK_PARSER_ERR(json_matchToken(&parsedJson, keyTokenElementIdx, "Array"));
-            CHECK_PARSER_ERR(array_get_element_count(&parsedJson, valueTokenElementIdx, flags));
-            _Static_assert(FLAGS_FURTHER_SCREENS > MAX_JSON_ARRAY_TOKEN_COUNT,
-                           "Flags for further screens too small");
-            if (*flags > MAX_JSON_ARRAY_TOKEN_COUNT) {
-                return PARSER_TOO_MANY_ARGUMENTS;
-            }
-            *flags = (*flags & FLAGS_FURTHER_SCREENS) | FLAG_IS_ARRAY;
-            *jsonToken = valueTokenElementIdx;
-            return PARSER_OK;
-        case JSMN_STRING:  // value
-            *flags = 0;
-            *jsonToken = 0;
-            return PARSER_OK;
-        case JSMN_PRIMITIVE:  // optional null
-            *flags = FLAG_IS_NONE;
-            *jsonToken = 0;
-            return PARSER_OK;
-        case JSMN_OBJECT:  // optional not null
-            CHECK_PARSER_ERR(json_matchToken(&parsedJson, keyTokenElementIdx, "Optional"));
-            CHECK_PARSER_ERR(json_matchArbitraryKeyValue(&parsedJson,
-                                                         baseValueTokenIndex,
-                                                         &valueJsonType,
-                                                         &keyTokenElementIdx,
-                                                         &valueTokenElementIdx));
-            switch (valueJsonType) {
-                case JSMN_ARRAY:  // array
-                    CHECK_PARSER_ERR(json_matchToken(&parsedJson, keyTokenElementIdx, "Array"));
-                    CHECK_PARSER_ERR(
-                        array_get_element_count(&parsedJson, valueTokenElementIdx, flags));
-                    _Static_assert(FLAGS_FURTHER_SCREENS > MAX_METADATA_MAX_ARRAY_ITEMS,
-                                   "Flags for further screens too small");
-                    if (*flags > MAX_METADATA_MAX_ARRAY_ITEMS) {
-                        return PARSER_TOO_MANY_ARGUMENTS;
-                    }
-                    *flags = (*flags & FLAGS_FURTHER_SCREENS) | FLAG_IS_ARRAY |
-                             FLAG_IS_OPTIONAL_NOT_NONE;
-                    *jsonToken = valueTokenElementIdx;
-                    return PARSER_OK;
-                case JSMN_STRING:  // value
-                    *flags = FLAG_IS_OPTIONAL_NOT_NONE;
-                    *jsonToken = baseValueTokenIndex;
-                    return PARSER_OK;
-                default:
-                    return PARSER_JSON_INVALID;
-            }
-        default:
-            return PARSER_JSON_INVALID;
-    }
-}
-
-parser_error_t parser_printArbitraryArgumentFirstScreen(const flow_argument_list_t *v,
-                                                        uint8_t argIndex,
-                                                        uint16_t flags,
-                                                        uint16_t jsonToken,
-                                                        char *outKey,
-                                                        uint16_t outKeyLen,
-                                                        char *outVal,
-                                                        uint16_t outValLen,
-                                                        uint8_t pageIdx,
-                                                        uint8_t *pageCount) {
-    if (argIndex >= v->argCount) {
-        return PARSER_UNEXPECTED_NUMBER_ITEMS;
-    }
-
-    parsed_json_t parsedJson = {false};
-    CHECK_PARSER_ERR(json_parse(&parsedJson,
-                                (char *) v->argCtx[argIndex].buffer,
-                                v->argCtx[argIndex].bufferLen));
-
-    if (jsonToken >= parsedJson.numberOfTokens) {
-        return PARSER_JSON_INVALID_TOKEN_IDX;
-    }
 
     char bufferUI[ARGUMENT_BUFFER_SIZE_STRING];
     *pageCount = 1;  // default value
 
-    if (flags & FLAG_IS_ARRAY) {
-        const uint16_t arrayElements = flags & FLAGS_FURTHER_SCREENS;
-        snprintf(outKey,
-                 outKeyLen,
-                 "%d: %s",
-                 (int) (argIndex + 1),
-                 (flags & FLAG_IS_OPTIONAL_NOT_NONE) ? "Opt. Array" : "Array");
-        snprintf(outVal, outValLen, "Length: %d", (int) arrayElements);
-        return PARSER_OK;
-    } else {  // Not an array
-        jsmntype_t valueJsonType = JSMN_UNDEFINED;
-        uint16_t keyTokenIdx = 0;
-        uint16_t valueTokenIdx = 0;
-        if (flags & FLAG_IS_NONE) {
-            CHECK_PARSER_ERR(json_matchOptionalKeyValue(&parsedJson,
-                                                        jsonToken,
-                                                        "",
-                                                        JSMN_STRING,
-                                                        &valueTokenIdx));
-            if (valueTokenIdx != JSON_MATCH_VALUE_IDX_NONE) {
-                return PARSER_JSON_INVALID;
+    jsmntype_t valueJsonType = JSMN_UNDEFINED;
+    uint16_t keyTokenIdx = 0;
+    uint16_t valueTokenIdx = 0;
+
+    CHECK_PARSER_ERR(
+        json_matchArbitraryKeyValue(&parsedJson, 0, &valueJsonType, &keyTokenIdx, &valueTokenIdx));
+
+    switch (valueJsonType) {
+        case JSMN_PRIMITIVE:
+        case JSMN_STRING:
+        case JSMN_OBJECT:
+        case JSMN_ARRAY:;
+            parser_error_t err =
+                json_extractToken(bufferUI, sizeof(bufferUI), &parsedJson, keyTokenIdx);
+            if (err != PARSER_OK && err != PARSER_UNEXPECTED_BUFFER_END) {
+                return err;
             }
-            snprintf(outKey, outKeyLen, "%d: Optional", (int) (argIndex + 1));
-            snprintf(outVal, outValLen, "None");
-            return PARSER_OK;
-        } else {
-            CHECK_PARSER_ERR(json_matchArbitraryKeyValue(&parsedJson,
-                                                         jsonToken,
-                                                         &valueJsonType,
-                                                         &keyTokenIdx,
-                                                         &valueTokenIdx));
-            if (valueJsonType != JSMN_STRING) {
-                return PARSER_JSON_INVALID;
+            // Key to long
+            if (err == PARSER_UNEXPECTED_BUFFER_END) {
+                snprintf(outKey, outKeyLen, "%d: <Long type name>", (int) (argIndex + 1));
+            } else {
+                int written = snprintf(outKey, outKeyLen, "%d: %s", (int) (argIndex + 1), bufferUI);
+                if (written < 0 || written >= outKeyLen) {  // Error or buffer overflow
+                    snprintf(outKey, outKeyLen, "%d: <Long type name>", (int) (argIndex + 1));
+                }
             }
-            CHECK_PARSER_ERR(
-                json_extractToken(bufferUI, sizeof(bufferUI), &parsedJson, keyTokenIdx))
-            snprintf(outKey,
-                     outKeyLen,
-                     "%d: %s%s",
-                     (int) (argIndex + 1),
-                     bufferUI,
-                     (flags & FLAG_IS_OPTIONAL_NOT_NONE) ? "?" : "");
-            CHECK_PARSER_ERR(
-                json_extractToken(bufferUI, sizeof(bufferUI), &parsedJson, valueTokenIdx))
+
+            err = json_extractToken(bufferUI, sizeof(bufferUI), &parsedJson, valueTokenIdx);
+            if (err != PARSER_OK && err != PARSER_UNEXPECTED_BUFFER_END) {
+                return err;
+            }
+            if (err == PARSER_UNEXPECTED_BUFFER_END) {
+                snprintf(bufferUI, sizeof(bufferUI), "<Value too long>");
+            }
             pageString(outVal, outValLen, bufferUI, pageIdx, pageCount);
             return PARSER_OK;
-        }
+        default:
+            return PARSER_JSON_INVALID;
     }
-    return PARSER_JSON_UNEXPECTED_ERROR;
-}
-
-parser_error_t parser_printArbitraryArrayElements(const flow_argument_list_t *v,
-                                                  uint8_t argIndex,
-                                                  uint16_t arrayIndex,
-                                                  uint16_t arrayJsonToken,
-                                                  char *outKey,
-                                                  uint16_t outKeyLen,
-                                                  char *outVal,
-                                                  uint16_t outValLen,
-                                                  uint8_t pageIdx,
-                                                  uint8_t *pageCount) {
-    if (argIndex >= v->argCount) {
-        return PARSER_UNEXPECTED_NUMBER_ITEMS;
-    }
-
-    parsed_json_t parsedJson = {false};
-    CHECK_PARSER_ERR(json_parse(&parsedJson,
-                                (char *) v->argCtx[argIndex].buffer,
-                                v->argCtx[argIndex].bufferLen));
-    if (arrayJsonToken >= parsedJson.numberOfTokens) {
-        return PARSER_JSON_INVALID_TOKEN_IDX;
-    }
-
-    uint16_t arrayLen = 0;
-    CHECK_PARSER_ERR(array_get_element_count(&parsedJson, arrayJsonToken, &arrayLen));
-    if (arrayIndex >= arrayLen) {
-        return PARSER_JSON_INVALID_TOKEN_IDX;
-    }
-
-    uint16_t arrayElementToken = 0;
-    CHECK_PARSER_ERR(
-        array_get_nth_element(&parsedJson, arrayJsonToken, arrayIndex, &arrayElementToken))
-
-    jsmntype_t valueJsonType = JSMN_UNDEFINED;
-    uint16_t keyTokenElementIdx = 0;
-    uint16_t valueTokenElementIdx = 0;
-    CHECK_PARSER_ERR(json_matchArbitraryKeyValue(&parsedJson,
-                                                 arrayElementToken,
-                                                 &valueJsonType,
-                                                 &keyTokenElementIdx,
-                                                 &valueTokenElementIdx));
-
-    if (valueJsonType != JSMN_STRING) {
-        return PARSER_JSON_INVALID;
-    }
-
-    char bufferUI[ARGUMENT_BUFFER_SIZE_STRING];
-
-    CHECK_PARSER_ERR(json_extractToken(bufferUI, sizeof(bufferUI), &parsedJson, keyTokenElementIdx))
-    snprintf(outKey,
-             outKeyLen,
-             "%d: %s %d",
-             (int) (argIndex + 1),
-             bufferUI,
-             (int) (arrayIndex + 1));
-    CHECK_PARSER_ERR(
-        json_extractToken(bufferUI, sizeof(bufferUI), &parsedJson, valueTokenElementIdx))
-    pageString(outVal, outValLen, bufferUI, pageIdx, pageCount);
-    return PARSER_OK;
 }
 
 parser_error_t parser_printBlockId(const flow_reference_block_id_t *v,
@@ -775,39 +613,15 @@ parser_error_t parser_getItem_internal(int8_t *displayIdx,
             return PARSER_OK;
         }
         for (size_t i = 0; i < parser_tx_obj.arguments.argCount; i++) {
-            uint16_t flags = 0;
-            uint16_t jsonToken = 0;
-            CHECK_PARSER_ERR(parser_printArbitraryPrepareToDisplay(&parser_tx_obj.arguments,
-                                                                   i,
-                                                                   &flags,
-                                                                   &jsonToken));
             SCREEN(true) {
-                return parser_printArbitraryArgumentFirstScreen(&parser_tx_obj.arguments,
-                                                                i,
-                                                                flags,
-                                                                jsonToken,
-                                                                outKey,
-                                                                outKeyLen,
-                                                                outVal,
-                                                                outValLen,
-                                                                pageIdx,
-                                                                pageCount);
-            }
-            if (flags & FLAG_IS_ARRAY) {
-                for (size_t j = 0; j < (flags & FLAGS_FURTHER_SCREENS); j++) {
-                    SCREEN(true) {
-                        return parser_printArbitraryArrayElements(&parser_tx_obj.arguments,
-                                                                  i,
-                                                                  j,
-                                                                  jsonToken,
-                                                                  outKey,
-                                                                  outKeyLen,
-                                                                  outVal,
-                                                                  outValLen,
-                                                                  pageIdx,
-                                                                  pageCount);
-                    }
-                }
+                return parser_printArbitraryArgument(&parser_tx_obj.arguments,
+                                                     i,
+                                                     outKey,
+                                                     outKeyLen,
+                                                     outVal,
+                                                     outValLen,
+                                                     pageIdx,
+                                                     pageCount);
             }
         }
     }
