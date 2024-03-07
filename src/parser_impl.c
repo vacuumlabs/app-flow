@@ -192,7 +192,7 @@ parser_error_t json_matchToken(const parsed_json_t *parsedJson,
         return PARSER_UNEXPECTED_TYPE;
     }
 
-    if (token.end < token.start || strlen(expectedValue) != (size_t) (token.end - token.start)) {
+    if (token.end < token.start || strlen(expectedValue) != (size_t)(token.end - token.start)) {
         return PARSER_UNEXPECTED_VALUE;
     }
 
@@ -211,7 +211,7 @@ parser_error_t json_matchNull(const parsed_json_t *parsedJson, uint16_t tokenIdx
         return PARSER_UNEXPECTED_TYPE;
     }
 
-    if (token.end < token.start || 4 != (size_t) (token.end - token.start)) {
+    if (token.end < token.start || 4 != (size_t)(token.end - token.start)) {
         return PARSER_UNEXPECTED_VALUE;
     }
 
@@ -228,30 +228,25 @@ parser_error_t json_matchKeyValue(const parsed_json_t *parsedJson,
                                   jsmntype_t jsonType,
                                   uint16_t *valueTokenIdx) {
     CHECK_PARSER_ERR(json_validateToken(parsedJson, tokenIdx))
-
-    if (!(tokenIdx + 4 < parsedJson->numberOfTokens)) {
-        // we need this token and 4 more
-        return PARSER_JSON_INVALID_TOKEN_IDX;
-    }
-
     if (parsedJson->tokens[tokenIdx].type != JSMN_OBJECT) {
-        return PARSER_UNEXPECTED_TYPE;
+        return PARSER_JSON_INVALID;
     }
 
-    if (parsedJson->tokens[tokenIdx].size != 2) {
-        return PARSER_UNEXPECTED_NUMBER_ITEMS;
+    uint16_t objectElements = 0;
+    CHECK_PARSER_ERR(object_get_element_count(parsedJson, tokenIdx, &objectElements));
+    if (objectElements != 2) {
+        return PARSER_JSON_INVALID;
     }
+
+    uint16_t keyTokenIdx = 0;
+    CHECK_PARSER_ERR(object_get_value(parsedJson, tokenIdx, "type", &keyTokenIdx));
+    CHECK_PARSER_ERR(object_get_value(parsedJson, tokenIdx, "value", valueTokenIdx));
 
     // Type key/value
-    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 1, (char *) "type"))
-    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 2, expectedType))
-    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 3, (char *) "value"))
-    if (parsedJson->tokens[tokenIdx + 4].type != jsonType) {
-        return PARSER_UNEXPECTED_NUMBER_ITEMS;
+    CHECK_PARSER_ERR(json_matchToken(parsedJson, keyTokenIdx, expectedType))
+    if (parsedJson->tokens[*valueTokenIdx].type != jsonType) {
+        return PARSER_JSON_INVALID;
     }
-
-    *valueTokenIdx = tokenIdx + 4;
-
     return PARSER_OK;
 }
 
@@ -262,35 +257,37 @@ parser_error_t json_matchOptionalKeyValue(const parsed_json_t *parsedJson,
                                           jsmntype_t jsonType,
                                           uint16_t *valueTokenIdx) {
     CHECK_PARSER_ERR(json_validateToken(parsedJson, tokenIdx))
-
-    if (!(tokenIdx + 4 < parsedJson->numberOfTokens)) {
-        // we need this token and 4 more.
-        return PARSER_JSON_INVALID_TOKEN_IDX;
-    }
-
     if (parsedJson->tokens[tokenIdx].type != JSMN_OBJECT) {
-        return PARSER_UNEXPECTED_TYPE;
+        return PARSER_JSON_INVALID;
     }
 
-    if (parsedJson->tokens[tokenIdx].size != 2) {
-        return PARSER_UNEXPECTED_NUMBER_ITEMS;
+    uint16_t objectElements = 0;
+    CHECK_PARSER_ERR(object_get_element_count(parsedJson, tokenIdx, &objectElements));
+    if (objectElements != 2) {
+        return PARSER_JSON_INVALID;
     }
 
-    // Type key/value
-    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 1, (char *) "type"))
-    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 2, (char *) "Optional"))
-    CHECK_PARSER_ERR(json_matchToken(parsedJson, tokenIdx + 3, (char *) "value"))
-    if (parsedJson->tokens[tokenIdx + 4].type == JSMN_PRIMITIVE) {  // optional null
-        CHECK_PARSER_ERR(json_matchNull(parsedJson, tokenIdx + 4))
+    uint16_t innerKeyTokenIdx = 0;
+    uint16_t innerValueTokenIdx = 0;
+    CHECK_PARSER_ERR(object_get_value(parsedJson, tokenIdx, "type", &innerKeyTokenIdx));
+    CHECK_PARSER_ERR(object_get_value(parsedJson, tokenIdx, "value", &innerValueTokenIdx));
+    CHECK_PARSER_ERR(json_matchToken(parsedJson, innerKeyTokenIdx, (char *) "Optional"))
+
+    if (parsedJson->tokens[innerValueTokenIdx].type == JSMN_PRIMITIVE) {  // optional null
+        CHECK_PARSER_ERR(json_matchNull(parsedJson, innerValueTokenIdx))
         *valueTokenIdx = JSON_MATCH_VALUE_IDX_NONE;
         return PARSER_OK;
     }
 
-    if (parsedJson->tokens[tokenIdx + 4].type == JSMN_OBJECT) {  // optional not not null
-        return json_matchKeyValue(parsedJson, tokenIdx + 4, expectedType, jsonType, valueTokenIdx);
+    if (parsedJson->tokens[innerValueTokenIdx].type == JSMN_OBJECT) {  // optional not null
+        return json_matchKeyValue(parsedJson,
+                                  innerValueTokenIdx,
+                                  expectedType,
+                                  jsonType,
+                                  valueTokenIdx);
     }
 
-    return PARSER_UNEXPECTED_VALUE;
+    return PARSER_JSON_INVALID;
 }
 
 parser_error_t json_matchArbitraryKeyValue(const parsed_json_t *parsedJson,
@@ -587,7 +584,7 @@ parser_error_t _countArgumentItems(const flow_argument_list_t *v,
 void checkAddressUsedInTx() {
     addressUsedInTx = 0;
     uint16_t authCount = parser_tx_obj.authorizers.authorizer_count;
-    for (uint16_t i = 0; i < (uint16_t) (authCount + 2); i++) {  //+2 for proposer and payer
+    for (uint16_t i = 0; i < (uint16_t)(authCount + 2); i++) {  //+2 for proposer and payer
         parser_context_t *ctx = &parser_tx_obj.payer.ctx;
         if (i == authCount) ctx = &parser_tx_obj.proposalKeyAddress.ctx;
         if (i < authCount) ctx = &parser_tx_obj.authorizers.authorizer[i].ctx;
