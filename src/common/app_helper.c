@@ -83,6 +83,7 @@ process_chunk_response_t process_chunk(__Z_UNUSED volatile uint32_t *tx, uint32_
         case 0x03:
             if (storeTxMetadata(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA) != PARSER_OK) {
                 initStoredTxMetadata();  // delete merkle tree proof on error for redundant security
+                ZEMU_TRACE();
                 THROW(APDU_CODE_DATA_INVALID);
             }
             return PROCESS_CHUNK_NOT_FINISHED;
@@ -90,6 +91,7 @@ process_chunk_response_t process_chunk(__Z_UNUSED volatile uint32_t *tx, uint32_
             if (validateStoredTxMetadataMerkleTreeLevel(&(G_io_apdu_buffer[OFFSET_DATA]),
                                                         rx - OFFSET_DATA) != PARSER_OK) {
                 initStoredTxMetadata();  // delete merkle tree proof on error for redundant security
+                ZEMU_TRACE();
                 THROW(APDU_CODE_DATA_INVALID);
             }
             return PROCESS_CHUNK_NOT_FINISHED;
@@ -97,6 +99,7 @@ process_chunk_response_t process_chunk(__Z_UNUSED volatile uint32_t *tx, uint32_
             if (validateStoredTxMetadataMerkleTreeLevel(&(G_io_apdu_buffer[OFFSET_DATA]),
                                                         rx - OFFSET_DATA) != PARSER_OK) {
                 initStoredTxMetadata();  // delete merkle tree proof on error for redundant security
+                ZEMU_TRACE();
                 THROW(APDU_CODE_DATA_INVALID);
             }
             return PROCESS_CHUNK_FINISHED_WITH_METADATA;

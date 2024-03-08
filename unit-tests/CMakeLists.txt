@@ -55,7 +55,7 @@ add_library(apdu_parser SHARED $ENV{BOLOS_SDK}/lib_standard_app/parser.c)
 add_library(rlp ../src/rlp.c)
 add_library(tx_metadata ../src/tx_metadata.c)
 add_library(hexutils ../deps/ledger-zxlib/src/hexutils.c)
-add_library(sha256mock utils/sha256.c)
+add_library(mocks utils/mocks.c)
 add_library(parser_tx ../src/parser_tx.c)
 add_library(parser_impl ../src/parser_impl.c)
 add_library(json_parser ../src/json/json_parser.c)
@@ -66,13 +66,14 @@ target_link_libraries(test_rlp PUBLIC
                       cmocka
                       gcov
                       hexutils
-                      rlp)
+                      rlp
+                      mocks)
 
 target_link_libraries(test_tx_metadata PUBLIC
                       cmocka
                       gcov
                       tx_metadata
-                      sha256mock)
+                      mocks)
 
 target_link_libraries(test_parser PUBLIC
                       cmocka
@@ -84,7 +85,7 @@ target_link_libraries(test_parser PUBLIC
                       json_parser
                       jsmn
                       hdpath
-                      sha256mock)
+                      mocks)
 
 add_test(test_rlp test_rlp)
 add_test(test_tx_metadata test_tx_metadata)

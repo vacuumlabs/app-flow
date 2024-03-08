@@ -33,6 +33,9 @@ const legerifyArgLabel = (name) => {
     "Networking Address":"Netw. Address",
     "Networking Key":"Netw. Key",
     "Public Keys":"Pub. Key",
+    "Machine Account Public Key":"MA PubKey",
+    "Raw Value for Machine Account Hash Algorithm Enum":"MA HAlg",
+    "Raw Value for Machine Account Signature Algorithm Enum":"MA SAlg",
   }
   return txArgTransforms[name]?txArgTransforms[name]:name
 }
@@ -101,7 +104,7 @@ const readManifest = (testnetFile, mainnetFile) => {
       }
     }
 
-    return Buffer.concat([
+    const result = Buffer.concat([
       Buffer.from("02", "hex"),                           // number of hashes
       Buffer.from(templateTestnet.hash, "hex"),           // hash testnet
       Buffer.from(templateMainnet.hash, "hex"),           // hash mainnet
@@ -110,6 +113,13 @@ const readManifest = (testnetFile, mainnetFile) => {
       uint8_to_buff(templateMainnet.arguments.length),      // number of arguments
       Buffer.concat(templateMainnet.arguments.map((arg, idx) => processArg(arg, idx))),
     ])
+    
+    if (result.length > 255) {
+      console.log(result.toString('hex'))
+      throw new Error("Metadata too long!");
+    }
+
+    return result
   }
 
   return [...Array(testnetTemplates.length).keys()].map((i) => templatesToMetadata(testnetTemplates[i], mainnetTemplates[i]));
@@ -127,58 +137,8 @@ const getMetadataFromCMetadata = (data) => Buffer.concat(
   })
 )
 
-const TX_METADATA_CREATE_ACCOUNT = getMetadataFromCMetadata([
-  1, 
-  0xee, 0xf2, 0xd0, 0x49, 0x44, 0x48, 0x55, 0x41, 0x77, 0x61, 0x2e, 0x63, 0x02, 0x62, 0x56, 0x25, 0x83, 0x39, 0x23, 0x0c, 0xbc, 0x69, 0x31, 0xde, 0xd7, 0x8d, 0x61, 0x49, 0x44, 0x3c, 0x61, 0x73,
-  'C', 'r', 'e', 'a', 't', 'e', ' ', 'A', 'c', 'c', 'o', 'u', 'n', 't', 0,  //tx name (to display)
-  1,
-  ARGUMENT_TYPE_ARRAY, 1, 5, 
-  'P', 'u', 'b', ' ', 'k', 'e', 'y', 0, //arg name (to display)
-  0, //argument index
-  'S', 't', 'r', 'i', 'n', 'g',  0, //expected value type
-  JSMN_STRING, //expected value json token type
-]);
-
-const TX_METADATA_ADD_NEW_KEY = getMetadataFromCMetadata([
-  1, //number of hashes + hashes
-  0x59, 0x5c, 0x86, 0x56, 0x14, 0x41, 0xb3, 0x2b, 0x2b, 0x91, 0xee, 0x03, 0xf9, 0xe1, 0x0c, 0xa6, 0xef, 0xa7, 0xb4, 0x1b, 0xcc, 0x99, 0x4f, 0x51, 0x31, 0x7e, 0xc0, 0xaa, 0x9d, 0x8f, 0x8a, 0x42,
-  'A', 'd', 'd', ' ', 'N', 'e', 'w', ' ', 'K', 'e', 'y', 0,  //tx name (to display)
-  1,  //number of arguments
-
-  //Argument 1
-  ARGUMENT_TYPE_NORMAL,
-  'P', 'u', 'b', ' ', 'k', 'e', 'y', 0, //arg name (to display)
-  0, //argument index
-  'S', 't', 'r', 'i', 'n', 'g',  0, //expected value type
-  JSMN_STRING, //expected value json token type
-]);
-
-const TX_METADATA_TOKEN_TRANSFER = getMetadataFromCMetadata([
-  3, //number of hashes + hashes
-  0xca, 0x80, 0xb6, 0x28, 0xd9, 0x85, 0xb3, 0x58, 0xae, 0x1c, 0xb1, 0x36, 0xbc, 0xd9, 0x76, 0x99, 0x7c, 0x94, 0x2f, 0xa1, 0x0d, 0xba, 0xbf, 0xea, 0xfb, 0x4e, 0x20, 0xfa, 0x66, 0xa5, 0xa5, 0xe2,
-  0xd5, 0x6f, 0x4e, 0x1d, 0x23, 0x55, 0xcd, 0xcf, 0xac, 0xfd, 0x01, 0xe4, 0x71, 0x45, 0x9c, 0x6e, 0xf1, 0x68, 0xbf, 0xdf, 0x84, 0x37, 0x1a, 0x68, 0x5c, 0xcf, 0x31, 0xcf, 0x3c, 0xde, 0xdc, 0x2d,
-  0x47, 0x85, 0x15, 0x86, 0xd9, 0x62, 0x33, 0x5e, 0x3f, 0x7d, 0x9e, 0x5d, 0x11, 0xa4, 0xc5, 0x27, 0xee, 0x4b, 0x5f, 0xd1, 0xc3, 0x89, 0x5e, 0x3c, 0xe1, 0xb9, 0xc2, 0x82, 0x1f, 0x60, 0xb1, 0x66,
-  'T', 'o', 'k', 'e', 'n', ' ', 'T', 'r', 'a', 'n', 's', 'f', 'e', 'r', 0,  //tx name (to display)
-  2,  //number of arguments
-
-  //Argument 1
-  ARGUMENT_TYPE_NORMAL,
-  'A', 'm', 'o', 'u', 'n', 't', 0, //arg name (to display)
-  0, //argument index
-  'U', 'F', 'i', 'x', '6', '4',  0, //expected value type
-  JSMN_STRING, //expected value json token type
-
-  //Argument 2
-  ARGUMENT_TYPE_NORMAL,
-  'D', 'e', 's', 't', 'i', 'n', 'a', 't', 'i', 'o', 'n', 0, //arg name (to display)
-  1, //argument index
-  'A', 'd', 'd', 'r', 'e', 's', 's', 0, //expected value type
-  JSMN_STRING, //expected value json token type
-]);
-
-
 const metadataManifest = readManifest("../manifest.testnet.json", "../manifest.mainnet.json");
-const txMetadata = [TX_METADATA_CREATE_ACCOUNT, TX_METADATA_ADD_NEW_KEY, TX_METADATA_TOKEN_TRANSFER, ...metadataManifest]
+const txMetadata = metadataManifest
 
 //We add empty metadata strings so we have 7^MERKLE_TREE_DEPTH elementes in the field
 const desiredLength = 7**MERKLE_TREE_DEPTH;
@@ -252,6 +212,7 @@ const data = "" +
     "export const merkleIndex = " + JSON.stringify(merkleIndex, null, 2) + "\n\n";
 
 fs.writeFileSync("../txMerkleTree.js", data);
+fs.writeFileSync("../txMerkleTree.mjs", data);
 
 const data2 = "# pylint: skip-file\n" +
     "merkleTree = " + JSON.stringify(merkleTree, null, 2) + "\n\n" +

@@ -365,16 +365,16 @@ parser_error_t _readArguments(parser_context_t *c, flow_argument_list_t *v) {
     CHECK_KIND(kind, RLP_KIND_LIST)
 
     v->argCount = 0;
-    while (v->ctx.offset < v->ctx.bufferLen && v->argCount < PARSER_MAX_ARGCOUNT) {
+    while (v->ctx.offset < v->ctx.bufferLen) {
+        if (v->argCount >= PARSER_MAX_ARGCOUNT) {
+            return PARSER_UNEXPECTED_NUMBER_ITEMS;
+        }
         CHECK_PARSER_ERR(rlp_decode(&v->ctx, &v->argCtx[v->argCount], &kind, &bytesConsumed))
         CTX_CHECK_AND_ADVANCE(&v->ctx, bytesConsumed)
         CHECK_KIND(kind, RLP_KIND_STRING)
         v->argCount++;
     }
     v->ctx.offset = 0;
-    if (v->argCount >= PARSER_MAX_ARGCOUNT) {
-        return PARSER_UNEXPECTED_NUMBER_ITEMS;
-    }
 
     return PARSER_OK;
 }
@@ -585,7 +585,8 @@ void checkAddressUsedInTx() {
     addressUsedInTx = 0;
     uint16_t authCount = parser_tx_obj.authorizers.authorizer_count;
     for (uint16_t i = 0; i < (uint16_t)(authCount + 2); i++) {  //+2 for proposer and payer
-        parser_context_t *ctx = &parser_tx_obj.payer.ctx;
+        parser_context_t *ctx = NULL;
+        if (i > authCount) ctx = &parser_tx_obj.payer.ctx;
         if (i == authCount) ctx = &parser_tx_obj.proposalKeyAddress.ctx;
         if (i < authCount) ctx = &parser_tx_obj.authorizers.authorizer[i].ctx;
 
