@@ -22,6 +22,9 @@ static const uint8_t merkleTreeRoot[METADATA_HASH_SIZE] = {
     0xd0, 0x72, 0x79, 0xa7, 0x3c, 0x3e, 0xf0, 0x99, 0xbf, 0x11, 0x01, 0x6b, 0x30, 0xbd, 0x25, 0x82,
 };
 
+static const char *STRING_TYPE_STRING = "String";
+static const char *UINT8_TYPE_STRING = "UInt8";
+
 parser_error_t _validateScriptHash(const uint8_t scriptHash[METADATA_HASH_SIZE],
                                    const uint8_t *txMetadata,
                                    uint16_t txMetadataLength) {
@@ -173,11 +176,17 @@ static parser_error_t parseTxMetadataInternal(const uint8_t scriptHash[METADATA_
         for (int i = 0; i < parsedTxMetadata->argCount; i++) {
             uint8_t argumentType = 0;
             READ_CHAR(&argumentType);
-            if (argumentType != ARGUMENT_TYPE_NORMAL && argumentType != ARGUMENT_TYPE_OPTIONAL &&
-                argumentType != ARGUMENT_TYPE_ARRAY) {
+            if (argumentType != ARGUMENT_TYPE_NORMAL && 
+                argumentType != ARGUMENT_TYPE_OPTIONAL &&
+                argumentType != ARGUMENT_TYPE_ARRAY &&
+                argumentType != ARGUMENT_TYPE_STRING &&
+                argumentType != ARGUMENT_TYPE_HASH_ALGO &&
+                argumentType != ARGUMENT_TYPE_SIGNATURE_ALGO &&
+                argumentType != ARGUMENT_TYPE_NODE_ROLE) {
                 return PARSER_METADATA_ERROR;
             }
             parsedTxMetadata->arguments[i].argumentType = argumentType;
+
             if (argumentType == ARGUMENT_TYPE_ARRAY) {
                 READ_CHAR(&parsedTxMetadata->arguments[i].arrayMinElements);
                 READ_CHAR(&parsedTxMetadata->arguments[i].arrayMaxElements);
@@ -187,12 +196,34 @@ static parser_error_t parseTxMetadataInternal(const uint8_t scriptHash[METADATA_
                     return PARSER_METADATA_ERROR;
                 }
             }
+
             READ_STRING(&parsedTxMetadata->arguments[i].displayKey,
                         &parsedTxMetadata->arguments[i].displayKeyLength)
             READ_CHAR(&parsedTxMetadata->arguments[i].argumentIndex);
-            READ_STRING(&parsedTxMetadata->arguments[i].jsonExpectedType,
-                        &parsedTxMetadata->arguments[i].jsonExpectedTypeLength);
-            READ_CHAR(&parsedTxMetadata->arguments[i].jsonExpectedKind);
+
+            switch (argumentType) {
+                case ARGUMENT_TYPE_NORMAL:
+                case ARGUMENT_TYPE_OPTIONAL:
+                case ARGUMENT_TYPE_ARRAY:
+                    READ_STRING(&parsedTxMetadata->arguments[i].jsonExpectedType,
+                                &parsedTxMetadata->arguments[i].jsonExpectedTypeLength);
+                    READ_CHAR(&parsedTxMetadata->arguments[i].jsonExpectedKind);
+                    break;
+                case ARGUMENT_TYPE_STRING:
+                    parsedTxMetadata->arguments[i].jsonExpectedType = STRING_TYPE_STRING;
+                    parsedTxMetadata->arguments[i].jsonExpectedTypeLength = strlen(STRING_TYPE_STRING);
+                    parsedTxMetadata->arguments[i].jsonExpectedKind = JSMN_STRING;
+                    break;
+                case ARGUMENT_TYPE_HASH_ALGO:
+                case ARGUMENT_TYPE_SIGNATURE_ALGO:
+                case ARGUMENT_TYPE_NODE_ROLE:
+                    parsedTxMetadata->arguments[i].jsonExpectedType = UINT8_TYPE_STRING;
+                    parsedTxMetadata->arguments[i].jsonExpectedTypeLength = strlen(UINT8_TYPE_STRING);
+                    parsedTxMetadata->arguments[i].jsonExpectedKind = JSMN_STRING;
+                    break;
+                default:
+                    return PARSER_UNEXPECTED_ERROR;
+            }
         }
     }
 

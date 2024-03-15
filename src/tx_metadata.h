@@ -29,20 +29,22 @@ typedef enum {
     ARGUMENT_TYPE_NORMAL = 1,
     ARGUMENT_TYPE_OPTIONAL = 2,
     ARGUMENT_TYPE_ARRAY = 3,
+    ARGUMENT_TYPE_STRING = 4,
+    ARGUMENT_TYPE_HASH_ALGO = 5,
+    ARGUMENT_TYPE_SIGNATURE_ALGO = 6,
+    ARGUMENT_TYPE_NODE_ROLE = 7,
 } argument_type_e;
 
 #define PARSER_MAX_ARGCOUNT          9
 #define METADATA_HASH_SIZE           32  // CX_SHA256_SIZE
 #define MAX_METADATA_MAX_ARRAY_ITEMS 20
 
-// It is planned that all these strings may be on flash, thus they are volatile (for NanoX and
-// NanoSPlus)
 typedef struct {
     argument_type_e argumentType;
     uint8_t
-        arrayMinElements;  // defined only for ARGUMENT_TYPE_ARRAY and ARGUMENT_TYPE_OPTIONALARRAY
+        arrayMinElements;  // defined only for ARGUMENT_TYPE_ARRAY
     uint8_t
-        arrayMaxElements;  // defined only for ARGUMENT_TYPE_ARRAY and ARGUMENT_TYPE_OPTIONALARRAY
+        arrayMaxElements;  // defined only for ARGUMENT_TYPE_ARRAY
     const char *displayKey;
     uint8_t displayKeyLength;
     uint8_t argumentIndex;         // argument index within transaction
