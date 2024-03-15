@@ -75,6 +75,33 @@ parser_error_t parser_printArgumentArray(const flow_argument_list_t *v,
                                          uint8_t pageIdx,
                                          uint8_t *pageCount);
 
+parser_error_t parser_printHashAlgo(const flow_argument_list_t *v,
+                                    uint8_t argIndex,
+                                    const char *expectedType,
+                                    jsmntype_t jsonType,
+                                    char *outVal,
+                                    uint16_t outValLen,
+                                    uint8_t pageIdx,
+                                    uint8_t *pageCount);
+
+parser_error_t parser_printSignatureAlgo(const flow_argument_list_t *v,
+                                         uint8_t argIndex,
+                                         const char *expectedType,
+                                         jsmntype_t jsonType,
+                                         char *outVal,
+                                         uint16_t outValLen,
+                                         uint8_t pageIdx,
+                                         uint8_t *pageCount);
+
+parser_error_t parser_printNodeRole(const flow_argument_list_t *v,
+                                    uint8_t argIndex,
+                                    const char *expectedType,
+                                    jsmntype_t jsonType,
+                                    char *outVal,
+                                    uint16_t outValLen,
+                                    uint8_t pageIdx,
+                                    uint8_t *pageCount);
+
 parser_error_t parser_printArbitraryArgument(const flow_argument_list_t *v,
                                              uint8_t argIndex,
                                              char *outKey,

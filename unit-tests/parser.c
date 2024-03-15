@@ -82,8 +82,16 @@ const char *token7b =
     "fe314dba5363c81654595d64884b1ecad1512a64e65e020164\"}],"
     "\"type\": \"Array\"}";
 
+const char *token2c = "{\"value\":\"1\",\"type\":\"UInt8\"}";
+const char *token3c = "{\"value\":\"2\",\"type\":\"UInt8\"}";
+const char *token4c = "{\"value\":\"3\",\"type\":\"UInt8\"}";
+const char *token5c = "{\"value\":\"4\",\"type\":\"UInt8\"}";
+const char *token6c = "{\"value\":\"5\",\"type\":\"UInt8\"}";
+const char *token7c = "{\"value\":\"6\",\"type\":\"UInt8\"}";
+
 flow_argument_list_t arg_list;
 flow_argument_list_t arg_list_b;
+flow_argument_list_t arg_list_c;
 
 void createArgList() {
     const parser_context_t context0;
@@ -111,6 +119,19 @@ void createArgList() {
         {context2b, context3b, context4b, context5b, context6b, context7b},
         6};
     memcpy(&arg_list_b, &new_arg_list_b, sizeof(arg_list_b));
+
+    const parser_context_t context0c;
+    const parser_context_t context2c = {(const uint8_t *) token2c, strlen(token2c), 0};
+    const parser_context_t context3c = {(const uint8_t *) token3c, strlen(token3c), 0};
+    const parser_context_t context4c = {(const uint8_t *) token4c, strlen(token4c), 0};
+    const parser_context_t context5c = {(const uint8_t *) token5c, strlen(token5c), 0};
+    const parser_context_t context6c = {(const uint8_t *) token6c, strlen(token6c), 0};
+    const parser_context_t context7c = {(const uint8_t *) token7c, strlen(token7c), 0};
+    flow_argument_list_t new_arg_list_c = {
+        context0c,
+        {context2c, context3c, context4c, context5c, context6c, context7c},
+        6};
+    memcpy(&arg_list_c, &new_arg_list_c, sizeof(arg_list_c));
 }
 
 static void test_printArgument(void **state) {
@@ -283,6 +304,104 @@ static void test_printOptionalArgument(void **state) {
     assert_int_equal(err, PARSER_UNEXPECTED_VALUE);
 }
 
+static void test_printEnums(void **state) {
+    char outValBuf[40];
+    uint8_t pageCountVar = 0;
+
+    char uint8[] = "UInt8";
+    parser_error_t err =
+        parser_printHashAlgo(&arg_list_c, 0, uint8, JSMN_STRING, outValBuf, 40, 0, &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "SHA2 256");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printHashAlgo(&arg_list_c, 1, uint8, JSMN_STRING, outValBuf, 40, 0, &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "SHA2 384");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printHashAlgo(&arg_list_c, 2, uint8, JSMN_STRING, outValBuf, 40, 0, &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "SHA3 256");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printHashAlgo(&arg_list_c, 3, uint8, JSMN_STRING, outValBuf, 40, 0, &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "SHA3 384");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printHashAlgo(&arg_list_c, 4, uint8, JSMN_STRING, outValBuf, 40, 0, &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "KMAC128 BLS BLS12 381");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printHashAlgo(&arg_list_c, 5, uint8, JSMN_STRING, outValBuf, 40, 0, &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "KECCAK 256");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printSignatureAlgo(&arg_list_c,
+                                    0,
+                                    uint8,
+                                    JSMN_STRING,
+                                    outValBuf,
+                                    40,
+                                    0,
+                                    &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "ECDSA P256");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printSignatureAlgo(&arg_list_c,
+                                    1,
+                                    uint8,
+                                    JSMN_STRING,
+                                    outValBuf,
+                                    40,
+                                    0,
+                                    &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "ECDSA secp256k1");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printSignatureAlgo(&arg_list_c,
+                                    2,
+                                    uint8,
+                                    JSMN_STRING,
+                                    outValBuf,
+                                    40,
+                                    0,
+                                    &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "BLS BLS12 381");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printNodeRole(&arg_list_c, 0, uint8, JSMN_STRING, outValBuf, 40, 0, &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "Collection");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printNodeRole(&arg_list_c, 1, uint8, JSMN_STRING, outValBuf, 40, 0, &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "Consensus");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printNodeRole(&arg_list_c, 2, uint8, JSMN_STRING, outValBuf, 40, 0, &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "Execution");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printNodeRole(&arg_list_c, 3, uint8, JSMN_STRING, outValBuf, 40, 0, &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "Verification");
+    assert_int_equal(pageCountVar, 1);
+
+    err = parser_printNodeRole(&arg_list_c, 4, uint8, JSMN_STRING, outValBuf, 40, 0, &pageCountVar);
+    assert_int_equal(err, PARSER_OK);
+    assert_string_equal(outValBuf, "Access");
+    assert_int_equal(pageCountVar, 1);
+}
+
 static void test_printArbitraryArgument(void **state) {
     char outKeyBuf[20];
     char outValBuf[40];
@@ -355,6 +474,7 @@ int main() {
     const struct CMUnitTest tests[] = {cmocka_unit_test(test_printArgument),
                                        cmocka_unit_test(test_printOptionalArgument),
                                        cmocka_unit_test(test_printArgumentArray),
+                                       cmocka_unit_test(test_printEnums),
                                        cmocka_unit_test(test_printArbitraryArgument)};
 
     return cmocka_run_group_tests(tests, NULL, NULL);

@@ -280,6 +280,147 @@ parser_error_t parser_printArgumentArray(const flow_argument_list_t *v,
     return PARSER_OK;
 }
 
+typedef parser_error_t (*enum_int_to_string_funtion)(uint8_t, char *, uint16_t);
+
+#define ENUM_ENTRY(enumValue, string)        \
+    case enumValue: {                        \
+        snprintf(outVal, outValLen, string); \
+        return PARSER_OK;                    \
+    }
+
+parser_error_t parser_printHashAlgoString(uint8_t enumValue, char *outVal, uint16_t outValLen) {
+    switch (enumValue) {
+        ENUM_ENTRY(1, "SHA2 256")
+        ENUM_ENTRY(2, "SHA2 384")
+        ENUM_ENTRY(3, "SHA3 256")
+        ENUM_ENTRY(4, "SHA3 384")
+        ENUM_ENTRY(5, "KMAC128 BLS BLS12 381")
+        ENUM_ENTRY(6, "KECCAK 256")
+        default:
+            return PARSER_UNEXPECTED_VALUE;
+    }
+}
+
+parser_error_t parser_printSignatureAlgoString(uint8_t enumValue,
+                                               char *outVal,
+                                               uint16_t outValLen) {
+    switch (enumValue) {
+        ENUM_ENTRY(1, "ECDSA P256")
+        ENUM_ENTRY(2, "ECDSA secp256k1")
+        ENUM_ENTRY(3, "BLS BLS12 381")
+        default:
+            return PARSER_UNEXPECTED_VALUE;
+    }
+}
+
+parser_error_t parser_printNodeRoleString(uint8_t enumValue, char *outVal, uint16_t outValLen) {
+    switch (enumValue) {
+        ENUM_ENTRY(1, "Collection")
+        ENUM_ENTRY(2, "Consensus")
+        ENUM_ENTRY(3, "Execution")
+        ENUM_ENTRY(4, "Verification")
+        ENUM_ENTRY(5, "Access")
+        default:
+            return PARSER_UNEXPECTED_VALUE;
+    }
+}
+
+#undef ENUM_ENTRY
+
+parser_error_t parser_printEnumValue(const flow_argument_list_t *v,
+                                     uint8_t argIndex,
+                                     const char *expectedType,
+                                     jsmntype_t jsonType,
+                                     enum_int_to_string_funtion fun,
+                                     char *outVal,
+                                     uint16_t outValLen,
+                                     uint8_t pageIdx,
+                                     uint8_t *pageCount) {
+    MEMZERO(outVal, outValLen);
+
+    if (argIndex >= v->argCount) {
+        return PARSER_UNEXPECTED_NUMBER_ITEMS;
+    }
+
+    parsed_json_t parsedJson = {false};
+    CHECK_PARSER_ERR(json_parse(&parsedJson,
+                                (char *) v->argCtx[argIndex].buffer,
+                                v->argCtx[argIndex].bufferLen));
+
+    char bufferUI[ARGUMENT_BUFFER_SIZE_STRING];
+    uint16_t valueTokenIndex;
+
+    CHECK_PARSER_ERR(json_matchKeyValue(&parsedJson, 0, expectedType, jsonType, &valueTokenIndex))
+    CHECK_PARSER_ERR(json_extractToken(bufferUI, sizeof(bufferUI), &parsedJson, valueTokenIndex))
+    uint8_t enumValue = str_to_int8(bufferUI, bufferUI + sizeof(bufferUI), NULL);
+    CHECK_PARSER_ERR(fun(enumValue, bufferUI, sizeof(bufferUI)))
+    pageString(outVal, outValLen, bufferUI, pageIdx, pageCount);
+
+    // Check requested page is in range
+    if (pageIdx > *pageCount) {
+        return PARSER_DISPLAY_PAGE_OUT_OF_RANGE;
+    }
+
+    return PARSER_OK;
+}
+
+parser_error_t parser_printHashAlgo(const flow_argument_list_t *v,
+                                    uint8_t argIndex,
+                                    const char *expectedType,
+                                    jsmntype_t jsonType,
+                                    char *outVal,
+                                    uint16_t outValLen,
+                                    uint8_t pageIdx,
+                                    uint8_t *pageCount) {
+    return parser_printEnumValue(v,
+                                 argIndex,
+                                 expectedType,
+                                 jsonType,
+                                 parser_printHashAlgoString,
+                                 outVal,
+                                 outValLen,
+                                 pageIdx,
+                                 pageCount);
+}
+
+parser_error_t parser_printSignatureAlgo(const flow_argument_list_t *v,
+                                         uint8_t argIndex,
+                                         const char *expectedType,
+                                         jsmntype_t jsonType,
+                                         char *outVal,
+                                         uint16_t outValLen,
+                                         uint8_t pageIdx,
+                                         uint8_t *pageCount) {
+    return parser_printEnumValue(v,
+                                 argIndex,
+                                 expectedType,
+                                 jsonType,
+                                 parser_printSignatureAlgoString,
+                                 outVal,
+                                 outValLen,
+                                 pageIdx,
+                                 pageCount);
+}
+
+parser_error_t parser_printNodeRole(const flow_argument_list_t *v,
+                                    uint8_t argIndex,
+                                    const char *expectedType,
+                                    jsmntype_t jsonType,
+                                    char *outVal,
+                                    uint16_t outValLen,
+                                    uint8_t pageIdx,
+                                    uint8_t *pageCount) {
+    return parser_printEnumValue(v,
+                                 argIndex,
+                                 expectedType,
+                                 jsonType,
+                                 parser_printNodeRoleString,
+                                 outVal,
+                                 outValLen,
+                                 pageIdx,
+                                 pageCount);
+}
+
 parser_error_t parser_printArbitraryArgument(const flow_argument_list_t *v,
                                              uint8_t argIndex,
                                              char *outKey,
@@ -597,6 +738,62 @@ parser_error_t parser_getItem_internal(int8_t *displayIdx,
                                                              pageIdx,
                                                              pageCount);
                         }
+                    }
+                    break;
+                case ARGUMENT_TYPE_STRING:
+                    SCREEN(true) {
+                        zemu_log("Argument string\n");
+                        snprintf(outKey, outKeyLen, "%s", marg->displayKey);
+                        return parser_printArgument(&parser_tx_obj.arguments,
+                                                    marg->argumentIndex,
+                                                    "String",
+                                                    JSMN_STRING,
+                                                    outVal,
+                                                    outValLen,
+                                                    pageIdx,
+                                                    pageCount);
+                    }
+                    break;
+                case ARGUMENT_TYPE_HASH_ALGO:
+                    SCREEN(true) {
+                        zemu_log("Argument hash algo\n");
+                        snprintf(outKey, outKeyLen, "%s", marg->displayKey);
+                        return parser_printHashAlgo(&parser_tx_obj.arguments,
+                                                    marg->argumentIndex,
+                                                    marg->jsonExpectedType,
+                                                    marg->jsonExpectedKind,
+                                                    outVal,
+                                                    outValLen,
+                                                    pageIdx,
+                                                    pageCount);
+                    }
+                    break;
+                case ARGUMENT_TYPE_SIGNATURE_ALGO:
+                    SCREEN(true) {
+                        zemu_log("Argument signature algo\n");
+                        snprintf(outKey, outKeyLen, "%s", marg->displayKey);
+                        return parser_printSignatureAlgo(&parser_tx_obj.arguments,
+                                                         marg->argumentIndex,
+                                                         marg->jsonExpectedType,
+                                                         marg->jsonExpectedKind,
+                                                         outVal,
+                                                         outValLen,
+                                                         pageIdx,
+                                                         pageCount);
+                    }
+                    break;
+                case ARGUMENT_TYPE_NODE_ROLE:
+                    SCREEN(true) {
+                        zemu_log("Argument node role\n");
+                        snprintf(outKey, outKeyLen, "%s", marg->displayKey);
+                        return parser_printNodeRole(&parser_tx_obj.arguments,
+                                                    marg->argumentIndex,
+                                                    marg->jsonExpectedType,
+                                                    marg->jsonExpectedKind,
+                                                    outVal,
+                                                    outValLen,
+                                                    pageIdx,
+                                                    pageCount);
                     }
                     break;
                 default:
