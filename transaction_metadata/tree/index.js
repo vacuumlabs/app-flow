@@ -11,7 +11,10 @@ const MAX_ARRAY_LENGTH = 3
 const ARGUMENT_TYPE_NORMAL = 1;
 const ARGUMENT_TYPE_OPTIONAL = 2;
 const ARGUMENT_TYPE_ARRAY = 3;
-const ARGUMENT_TYPE_OPTIONALARRAY = 4;
+const ARGUMENT_TYPE_STRING = 4;
+const ARGUMENT_TYPE_HASH_ALGO = 5;
+const ARGUMENT_TYPE_SIGNATURE_ALGO = 6;
+const ARGUMENT_TYPE_NODE_ROLE = 7;
 const JSMN_STRING = 3;
 
 const uint8_to_buff = (n) => {
@@ -33,11 +36,24 @@ const legerifyArgLabel = (name) => {
     "Networking Address":"Netw. Address",
     "Networking Key":"Netw. Key",
     "Public Keys":"Pub. Key",
-    "Machine Account Public Key":"MA PubKey",
-    "Raw Value for Machine Account Hash Algorithm Enum":"MA HAlg",
-    "Raw Value for Machine Account Signature Algorithm Enum":"MA SAlg",
+    "Machine Account Public Key":"MA Pub. Key",
+    "Raw Value for Machine Account Hash Algorithm Enum":"MA Hash Alg.",
+    "Raw Value for Machine Account Signature Algorithm Enum":"MA Sign. Alg.",
+    "Raw Value for Signature Algorithm Enum":"Signature Alg.",
+    "Raw Value for Hash Algorithm Enum":"Hash Alg.",
   }
   return txArgTransforms[name]?txArgTransforms[name]:name
+}
+
+const enumToType = (name) => {
+  const argTransforms = {
+    "Raw Value for Machine Account Hash Algorithm Enum":ARGUMENT_TYPE_HASH_ALGO,
+    "Raw Value for Machine Account Signature Algorithm Enum":ARGUMENT_TYPE_SIGNATURE_ALGO,
+    "Raw Value for Signature Algorithm Enum":ARGUMENT_TYPE_SIGNATURE_ALGO,
+    "Raw Value for Hash Algorithm Enum":ARGUMENT_TYPE_HASH_ALGO,
+    "Node Role": ARGUMENT_TYPE_NODE_ROLE
+  }
+  return argTransforms[name]?argTransforms[name]:ARGUMENT_TYPE_NORMAL
 }
 
 const readManifest = (testnetFile, mainnetFile) => {
@@ -54,6 +70,22 @@ const readManifest = (testnetFile, mainnetFile) => {
 
   const templatesToMetadata = (templateTestnet, templateMainnet) => {
     const processArg = (arg, idx) => {
+      if (arg.type == "String") {
+        return Buffer.concat([
+          uint8_to_buff(ARGUMENT_TYPE_STRING),                            //argument type
+          Buffer.from(legerifyArgLabel(arg.label)),                       //argument label
+          Buffer.from("00", "hex"),                                       //trailing 0
+          uint8_to_buff(idx),                                             //order in which should arguments display
+        ])  
+      }
+      if (arg.type == "UInt8" && enumToType(arg.label) != ARGUMENT_TYPE_NORMAL) {
+        return Buffer.concat([
+          uint8_to_buff(enumToType(arg.label)),                           //argument type
+          Buffer.from(legerifyArgLabel(arg.label)),                       //argument label
+          Buffer.from("00", "hex"),                                       //trailing 0
+          uint8_to_buff(idx),                                             //order in which should arguments display
+        ])  
+      }
       if (arg.type[0] !== '[' && arg.type[arg.type.length-1] !== '?') {
         return Buffer.concat([
           uint8_to_buff(ARGUMENT_TYPE_NORMAL),                            //argument type
