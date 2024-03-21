@@ -41,10 +41,8 @@ typedef enum {
 
 typedef struct {
     argument_type_e argumentType;
-    uint8_t
-        arrayMinElements;  // defined only for ARGUMENT_TYPE_ARRAY
-    uint8_t
-        arrayMaxElements;  // defined only for ARGUMENT_TYPE_ARRAY
+    uint8_t arrayMinElements;  // defined only for ARGUMENT_TYPE_ARRAY
+    uint8_t arrayMaxElements;  // defined only for ARGUMENT_TYPE_ARRAY
     const char *displayKey;
     uint8_t displayKeyLength;
     uint8_t argumentIndex;         // argument index within transaction

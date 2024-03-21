@@ -18,9 +18,8 @@ struct {
 } txMetadataState;
 
 static const uint8_t merkleTreeRoot[METADATA_HASH_SIZE] = {
-    0xe5, 0xde, 0x7e, 0x03, 0x15, 0x1b, 0x79, 0xa5, 0x30, 0xf2, 0x98, 0x06, 0x44, 0x4d, 0x17, 0x64, 
-    0xa0, 0xdb, 0xd4, 0x82, 0x3e, 0xa3, 0x8e, 0xb5, 0x81, 0x44, 0xf2, 0xe5, 0x51, 0xef, 0x90, 0xd9
-};
+    0xe5, 0xde, 0x7e, 0x03, 0x15, 0x1b, 0x79, 0xa5, 0x30, 0xf2, 0x98, 0x06, 0x44, 0x4d, 0x17, 0x64,
+    0xa0, 0xdb, 0xd4, 0x82, 0x3e, 0xa3, 0x8e, 0xb5, 0x81, 0x44, 0xf2, 0xe5, 0x51, 0xef, 0x90, 0xd9};
 
 static const char *STRING_TYPE_STRING = "String";
 static const char *UINT8_TYPE_STRING = "UInt8";
@@ -176,10 +175,8 @@ static parser_error_t parseTxMetadataInternal(const uint8_t scriptHash[METADATA_
         for (int i = 0; i < parsedTxMetadata->argCount; i++) {
             uint8_t argumentType = 0;
             READ_CHAR(&argumentType);
-            if (argumentType != ARGUMENT_TYPE_NORMAL && 
-                argumentType != ARGUMENT_TYPE_OPTIONAL &&
-                argumentType != ARGUMENT_TYPE_ARRAY &&
-                argumentType != ARGUMENT_TYPE_STRING &&
+            if (argumentType != ARGUMENT_TYPE_NORMAL && argumentType != ARGUMENT_TYPE_OPTIONAL &&
+                argumentType != ARGUMENT_TYPE_ARRAY && argumentType != ARGUMENT_TYPE_STRING &&
                 argumentType != ARGUMENT_TYPE_HASH_ALGO &&
                 argumentType != ARGUMENT_TYPE_SIGNATURE_ALGO &&
                 argumentType != ARGUMENT_TYPE_NODE_ROLE) {
@@ -211,14 +208,16 @@ static parser_error_t parseTxMetadataInternal(const uint8_t scriptHash[METADATA_
                     break;
                 case ARGUMENT_TYPE_STRING:
                     parsedTxMetadata->arguments[i].jsonExpectedType = STRING_TYPE_STRING;
-                    parsedTxMetadata->arguments[i].jsonExpectedTypeLength = strlen(STRING_TYPE_STRING);
+                    parsedTxMetadata->arguments[i].jsonExpectedTypeLength =
+                        strlen(STRING_TYPE_STRING);
                     parsedTxMetadata->arguments[i].jsonExpectedKind = JSMN_STRING;
                     break;
                 case ARGUMENT_TYPE_HASH_ALGO:
                 case ARGUMENT_TYPE_SIGNATURE_ALGO:
                 case ARGUMENT_TYPE_NODE_ROLE:
                     parsedTxMetadata->arguments[i].jsonExpectedType = UINT8_TYPE_STRING;
-                    parsedTxMetadata->arguments[i].jsonExpectedTypeLength = strlen(UINT8_TYPE_STRING);
+                    parsedTxMetadata->arguments[i].jsonExpectedTypeLength =
+                        strlen(UINT8_TYPE_STRING);
                     parsedTxMetadata->arguments[i].jsonExpectedKind = JSMN_STRING;
                     break;
                 default:

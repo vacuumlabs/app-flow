@@ -653,7 +653,8 @@ parser_error_t parser_getItem_internal(int8_t *displayIdx,
         SCREEN(true) {
             snprintf(outKey, outKeyLen, "Type");
             snprintf(outVal, outValLen, "%s", parser_tx_obj.metadata.txName);
-            zemu_log(outVal);zemu_log("\n");
+            zemu_log(outVal);
+            zemu_log("\n");
             return PARSER_OK;
         }
     } else {
