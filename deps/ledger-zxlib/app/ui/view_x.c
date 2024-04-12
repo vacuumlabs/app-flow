@@ -31,6 +31,7 @@
 #include "tx.h"
 #include "view_nano.h"
 #include "view_nano_inspect.h"
+#include "menu_handler.h"
 
 #ifdef APP_SECRET_MODE_ENABLED
 #include "secret.h"
@@ -48,6 +49,7 @@ static void h_expert_update();
 static void h_review_loop_start();
 static void h_review_loop_inside();
 static void h_review_loop_end();
+static void h_view_address();
 
 #ifdef APP_SECRET_MODE_ENABLED
 static void h_secret_click();
@@ -77,14 +79,14 @@ extern unsigned int review_type;
 UX_STEP_NOCB(ux_idle_flow_1_step, pbb, { &C_icon_app, MENU_MAIN_APP_LINE1, viewdata.key,});
 UX_STEP_CB_INIT(ux_idle_flow_2_step, bn,  h_expert_update(), h_expert_toggle(), { "Expert mode:", viewdata.value, });
 UX_STEP_NOCB(ux_idle_flow_3_step, bn, { APPVERSION_LINE1, APPVERSION_LINE2, });
+UX_STEP_CB(ux_idle_flow_4_step, bn, h_view_address(), { "View", "address", });
 
 #ifdef APP_SECRET_MODE_ENABLED
-UX_STEP_CB(ux_idle_flow_4_step, bn, h_secret_click(), { "Developed by:", "Zondax.ch", });
+UX_STEP_CB(ux_idle_flow_5_step, bn, h_secret_click(), { "License:", "Apache 2.0", });
 #else
-UX_STEP_NOCB(ux_idle_flow_4_step, bn, { "Developed by:", "Zondax.ch", });
+UX_STEP_NOCB(ux_idle_flow_5_step, bn, { "License:", "Apache 2.0", });
 #endif
 
-UX_STEP_NOCB(ux_idle_flow_5_step, bn, { "License:", "Apache 2.0", });
 UX_STEP_CB(ux_idle_flow_6_step, pb, os_sched_exit(-1), { &C_icon_dashboard, "Quit",});
 
 #ifdef APP_ACCOUNT_MODE_ENABLED
@@ -451,4 +453,10 @@ void view_custom_error_show_impl() {
     }
     ux_flow_init(0, ux_custom_error_flow, NULL);
 }
+
+static void h_view_address() {
+    handleMenuShowAddress();
+//    view_review_show_impl();
+}
+
 #endif

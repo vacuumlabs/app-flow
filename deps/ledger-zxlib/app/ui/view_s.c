@@ -30,6 +30,8 @@
 #include "view_nano.h"
 #include "view_nano_inspect.h"
 
+#include "menu_handler.h"
+
 #define BAGL_WIDTH 128
 #define BAGL_HEIGHT 32
 #define BAGL_WIDTH_MARGIN 10
@@ -44,6 +46,7 @@ static void h_expert_update();
 static void h_review_button_left();
 static void h_review_button_right();
 static void h_review_button_both();
+static void h_view_address();
 
 bool is_accept_item();
 void set_accept_item();
@@ -86,16 +89,8 @@ void os_exit(uint32_t id) {
 const ux_menu_entry_t menu_main[] = {
     {NULL, NULL, 0, &C_icon_app, MENU_MAIN_APP_LINE1, viewdata.key, 33, 12},
     {NULL, h_expert_toggle, 0, &C_icon_app, "Expert mode:", viewdata.value, 33, 12},
-
-#ifdef APP_ACCOUNT_MODE_ENABLED
-    {NULL, h_account_toggle, 0, &C_icon_app, "Account:", viewdata.value, 33, 12},
-#endif
-
-#ifdef SHORTCUT_MODE_ENABLED
-    {NULL, h_shortcut_toggle, 0, &C_icon_app, "Shortcut mode:", viewdata.value, 33, 12},
-#endif
-
     {NULL, NULL, 0, &C_icon_app, APPVERSION_LINE1, APPVERSION_LINE2, 33, 12},
+    {NULL, h_view_address, 0, &C_icon_app, "View", "address", 33, 12},
 
     {NULL,
 #ifdef APP_SECRET_MODE_ENABLED
@@ -103,9 +98,8 @@ const ux_menu_entry_t menu_main[] = {
 #else
      NULL,
 #endif
-     0, &C_icon_app, "Developed by:", "Zondax.ch", 33, 12},
+     0, &C_icon_app, "License: ", "Apache 2.0", 33, 12},
 
-    {NULL, NULL, 0, &C_icon_app, "License: ", "Apache 2.0", 33, 12},
     {NULL, os_exit, 0, &C_icon_dashboard, "Quit", NULL, 50, 29},
     UX_MENU_END
 };
@@ -114,7 +108,6 @@ const ux_menu_entry_t menu_initialize[] = {
     {NULL, NULL, 0, &C_icon_app, MENU_MAIN_APP_LINE1, "Not Ready", 33, 12},
     {NULL, h_initialize, 0, &C_icon_app, "Click to", "Initialize", 33, 12},
     {NULL, NULL, 0, &C_icon_app, APPVERSION_LINE1, APPVERSION_LINE2, 33, 12},
-    {NULL, NULL, 0, &C_icon_app, "Developed by:", "Zondax.ch", 33, 12},
     {NULL, NULL, 0, &C_icon_app, "License: ", "Apache 2.0", 33, 12},
     {NULL, os_exit, 0, &C_icon_dashboard, "Quit", NULL, 50, 29},
     UX_MENU_END
@@ -354,6 +347,10 @@ void h_expert_update() {
     if (app_mode_expert()) {
         snprintf(viewdata.value, MAX_CHARS_PER_VALUE_LINE, "enabled");
     }
+}
+
+static void h_view_address() {
+    handleMenuShowAddress();
 }
 
 #ifdef APP_ACCOUNT_MODE_ENABLED
