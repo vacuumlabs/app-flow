@@ -23,6 +23,7 @@
 #include "app_mode.h"
 #include "nbgl_use_case.h"
 #include "actions.h"
+#include "menu_handler.h"
 
 #include "nbgl_page.h"
 
@@ -70,6 +71,7 @@ typedef enum {
   EXPERT_MODE_TOKEN = FIRST_USER_TOKEN,
   ACCOUNT_MODE_TOKEN,
   SECRET_MODE_TOKEN,
+  REVIEW_ADDRESS_TOKEN,
 } config_token_e;
 
 void app_quit(void) {
@@ -89,8 +91,8 @@ static void view_idle_show_impl_callback() {
     view_idle_show_impl(0, NULL);
 }
 
-static const char* const INFO_KEYS[] = {"Version", "Developed by", "Website", "License"};
-static const char* const INFO_VALUES[] = {APPVERSION, "Zondax AG", "https://zondax.ch", "Apache 2.0"};
+static const char* const INFO_KEYS[] = {"Version",  "License"};
+static const char* const INFO_VALUES[] = {APPVERSION, "Apache 2.0"};
 
 static const char* txn_choice_message = "Reject transaction?";
 static const char* add_choice_message = "Reject address?";
@@ -108,6 +110,10 @@ static void h_expert_toggle() {
 
 static void confirm_error(__Z_UNUSED bool confirm) {
     h_error_accept(0);
+}
+
+static void h_view_address() {
+    handleMenuShowAddress();
 }
 
 static void confirm_callback(bool confirm) {
@@ -329,6 +335,15 @@ static bool settings_screen_callback(uint8_t page, nbgl_pageContent_t* content) 
             break;
         }
 
+        case 2: {
+            content->type = INFO_BUTTON;
+            content->infoButton.text = "Show address";
+            content->infoButton.icon = NULL;
+            content->infoButton.buttonText = "Review address";
+            content->infoButton.buttonToken = REVIEW_ADDRESS_TOKEN;
+            break;
+        }
+
         default:
             ZEMU_LOGF(50, "Incorrect settings page: %d\n", page)
             return false;
@@ -355,6 +370,10 @@ static void settings_toggle_callback(int token, __Z_UNUSED uint8_t index) {
             break;
 #endif
 
+        case REVIEW_ADDRESS_TOKEN:
+            h_view_address();
+            break;
+
         default:
             ZEMU_LOGF(50, "Toggling setting not found\n")
             break;
@@ -365,7 +384,7 @@ void setting_screen() {
     //Set return button top-left (true) botton-left (false)
     const bool return_button_top_left = false;
     const uint8_t init_page = 0;
-    const uint8_t settings_pages = 2;
+    const uint8_t settings_pages = 3;
     nbgl_useCaseSettings(MENU_MAIN_APP_LINE1, init_page, settings_pages, return_button_top_left,
                         view_idle_show_impl_callback, settings_screen_callback, settings_toggle_callback);
 }

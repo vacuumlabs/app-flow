@@ -1,6 +1,6 @@
 from application_client.flow_command_sender import FlowCommandSender, HashType
 
-from ragger.navigator import NavInsID
+from ragger.navigator import NavIns, NavInsID
 from ragger.bip import CurveChoice
 
 from utils import ROOT_SCREENSHOT_PATH, util_set_slot
@@ -43,6 +43,10 @@ def test_app_mainmenu(firmware, backend, navigator, test_name):
         instructions = [
             NavInsID.USE_CASE_HOME_SETTINGS,
             NavInsID.USE_CASE_SETTINGS_NEXT,
+            NavInsID.USE_CASE_SETTINGS_NEXT,
+            NavInsID.USE_CASE_CHOICE_CONFIRM,
+            NavInsID.USE_CASE_REVIEW_TAP,
+            NavInsID.USE_CASE_ADDRESS_CONFIRMATION_CONFIRM,
             NavInsID.USE_CASE_SETTINGS_MULTI_PAGE_EXIT
         ]
 
@@ -78,6 +82,11 @@ def test_app_mainmenu(firmware, backend, navigator, test_name):
         instructions = [
             NavInsID.USE_CASE_HOME_SETTINGS,
             NavInsID.USE_CASE_SETTINGS_NEXT,
+            NavInsID.USE_CASE_SETTINGS_NEXT,
+            NavInsID.USE_CASE_CHOICE_CONFIRM,
+            NavInsID.USE_CASE_REVIEW_TAP,
+            NavInsID.USE_CASE_REVIEW_TAP,
+            NavInsID.USE_CASE_ADDRESS_CONFIRMATION_CONFIRM,
             NavInsID.USE_CASE_SETTINGS_MULTI_PAGE_EXIT
         ]
 
