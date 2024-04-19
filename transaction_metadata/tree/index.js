@@ -26,7 +26,7 @@ const uint8_to_buff = (n) => {
 //This is to implement custom rules to make the labels shorter
 const legerifyTxName = (name) => {
   const txNameTransforms = {
-    "":""
+    "Transfer Fungible Token with Address":"Transfer Fungible Token with Addr"
   }
   return txNameTransforms[name]?txNameTransforms[name]:name
 }
@@ -41,6 +41,12 @@ const legerifyArgLabel = (name) => {
     "Raw Value for Machine Account Signature Algorithm Enum":"MA Sign. Alg.",
     "Raw Value for Signature Algorithm Enum":"Signature Alg.",
     "Raw Value for Hash Algorithm Enum":"Hash Alg.",
+    "FT Contract Address":"FT Contract Addr.",
+    "Sender's Collection Path Identifier": "Sen. Coll Path Id",
+    "Recipient's Receiver Path Identifier": "Rec. Coll Path Id",
+    "NFT Contract Address": "NFT Contract Addr",
+    "NFT ID to Transfer": "NFT ID to Transf",
+    "NFT Contract Address":"NFT Contract Addr"
   }
   return txArgTransforms[name]?txArgTransforms[name]:name
 }
