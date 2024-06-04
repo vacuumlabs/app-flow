@@ -55,7 +55,7 @@ It will allow you, whether you are developing on macOS, Windows or Linux to quic
 
 ### With a terminal
 
-#### Using the `ledger-app-dev-tools` docker container
+#### Using the `ledger-app-dev-tools` docker container (recommended)
 
 The [ledger-app-dev-tools](https://github.com/LedgerHQ/ledger-app-builder/pkgs/container/ledger-app-builder%2Fledger-app-dev-tools) docker image contains all the required tools and libraries to **build**, **test** and **load** an application.
 
@@ -67,7 +67,7 @@ sudo docker pull ghcr.io/ledgerhq/ledger-app-builder/ledger-app-dev-tools:latest
 
 You can then enter this development environment by executing the following command from the directory of the application `git` repository:
 
-##### Linux (Ubuntu)
+##### Linux (Ubuntu) (recommended)
 
 ```shell
 sudo docker run --rm -ti --user "$(id -u):$(id -g)" --privileged -v "/dev/bus/usb:/dev/bus/usb" -v "$(realpath .):/app" ghcr.io/ledgerhq/ledger-app-builder/ledger-app-dev-tools:latest
@@ -116,7 +116,7 @@ Setup a compilation environment by following the [shell with docker approach](#w
 From inside the container, use the following command to build the app :
 
 ```shell
-make DEBUG=1  # compile optionally with PRINTF
+make 
 ```
 
 You can choose which device to compile and load for by setting the `BOLOS_SDK` environment variable to the following values :
@@ -125,6 +125,11 @@ You can choose which device to compile and load for by setting the `BOLOS_SDK` e
 - `BOLOS_SDK=$NANOX_SDK`
 - `BOLOS_SDK=$NANOSP_SDK`
 - `BOLOS_SDK=$STAX_SDK`
+
+For Stax device you can compile 
+```shell
+make BOLOS_SDK=$STAX_SDK DEBUG=1  # compile optionally with PRINTF
+```
 
 ### Loading on a physical device
 
@@ -175,7 +180,7 @@ python3 -m ledgerblue.runScript --scp --fileName bin/app.apdu --elfFile bin/app.
 
 The flow app comes with functional tests implemented with Ledger's [Ragger](https://github.com/LedgerHQ/ragger) test framework.
 
-### Linux (Ubuntu)
+### Linux (Ubuntu) (recommended)
 
 On Linux, you can use [Ledger's VS Code extension](#with-vscode) to run the tests. If you prefer not to, open a terminal and follow the steps below.
 

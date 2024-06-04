@@ -31,6 +31,9 @@
 #include "tx_metadata.h"
 
 void extractHDPathAndCryptoOptions(uint32_t rx, uint32_t offset) {
+    if (rx >= sizeof(G_io_apdu_buffer)) {
+        THROW(APDU_CODE_WRONG_LENGTH);
+    }
     if ((rx - offset) < sizeof(hdPath.data) + sizeof(cryptoOptions)) {
         THROW(APDU_CODE_WRONG_LENGTH);
     }

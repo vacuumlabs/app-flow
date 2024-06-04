@@ -185,7 +185,7 @@ zxerr_t crypto_sign(const hd_path_t path,
                                sizeof(messageDigest),
                                &messageDigestSize));
 
-    if (messageDigestSize != 32) {
+    if (messageDigestSize != CX_SHA256_SIZE) {
         zemu_log_stack("crypto_sign: zxerr_out_of_bounds");
         return zxerr_out_of_bounds;
     }

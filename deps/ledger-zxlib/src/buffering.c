@@ -46,7 +46,7 @@ void buffering_reset() {
     flash.in_use = 0;
 }
 
-int buffering_append(uint8_t *data, int length) {
+uint32_t buffering_append(uint8_t *data, uint32_t length) {
     if (ram.in_use) {
         if (ram.size - ram.pos >= length) {
             // RAM in use, append to ram if there is enough space

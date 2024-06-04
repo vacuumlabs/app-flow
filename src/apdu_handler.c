@@ -101,7 +101,10 @@ __Z_INLINE void handleSign(volatile uint32_t *flags, volatile uint32_t *tx, uint
             zxerr_t err = message_parse();
             if (err != zxerr_ok) {
                 const char *error_msg = "Invalid message";
-                int error_msg_length = strlen(error_msg);
+                uint16_t error_msg_length = strlen(error_msg);
+                if (error_msg_length > sizeof(G_io_apdu_buffer)) {
+                    THROW(APDU_CODE_UNKNOWN);
+                }
                 MEMCPY(G_io_apdu_buffer, error_msg, error_msg_length);
                 *tx += (error_msg_length);
                 ZEMU_TRACE();
@@ -118,7 +121,10 @@ __Z_INLINE void handleSign(volatile uint32_t *flags, volatile uint32_t *tx, uint
             const char *error_msg = tx_parse(callType);
 
             if (error_msg != NULL) {
-                int error_msg_length = strlen(error_msg);
+                uint16_t error_msg_length = strlen(error_msg);
+                if (error_msg_length >= sizeof(G_io_apdu_buffer)) {
+                    THROW(APDU_CODE_UNKNOWN);
+                }
                 MEMCPY(G_io_apdu_buffer, error_msg, error_msg_length);
                 *tx += (error_msg_length);
                 ZEMU_TRACE();
@@ -200,10 +206,6 @@ __Z_INLINE void handleGetSlot(__Z_UNUSED volatile uint32_t *flags,
 __Z_INLINE void handleSetSlot(volatile uint32_t *flags,
                               __Z_UNUSED volatile uint32_t *tx,
                               uint32_t rx) {
-    if (rx != 5 + 1 + 8 + 20 + 2) {
-        THROW(APDU_CODE_DATA_INVALID);
-    }
-
     zxerr_t err = slot_parseSlot(G_io_apdu_buffer + OFFSET_DATA, rx - OFFSET_DATA);
     if (err != zxerr_ok) {
         THROW(APDU_CODE_DATA_INVALID);

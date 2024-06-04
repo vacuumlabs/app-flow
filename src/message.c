@@ -52,6 +52,10 @@ zxerr_t message_parse() {
         messageData.canBeDisplayed = true;
     }
 
+    if (!messageData.canBeDisplayed && !app_mode_expert()) {
+        return zxerr_out_of_bounds;
+    }
+
     return zxerr_ok;
 }
 

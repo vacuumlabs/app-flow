@@ -17,10 +17,13 @@
 
 #include "zxerror.h"
 
+// Parses message from the buffer
 zxerr_t message_parse();
 
+/// Returns the number of items in the message view
 zxerr_t message_getNumItems(uint8_t *num_items);
 
+/// Gets an specific item from the message view (including paging)
 zxerr_t message_getItem(int8_t displayIdx,
                         char *outKey,
                         uint16_t outKeyLen,

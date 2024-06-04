@@ -540,9 +540,6 @@ parser_error_t _read(parser_context_t *c, parser_tx_t *v) {
         return PARSER_UNEXPECTED_BUFFER_END;
     }
 
-    // Check last item? signers?
-    // TODO: Do we want to show signers too?
-    // TODO: confirm that things are not completed
     return PARSER_OK;
 }
 
