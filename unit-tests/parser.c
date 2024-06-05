@@ -82,6 +82,7 @@ const char *token7b =
     "fe314dba5363c81654595d64884b1ecad1512a64e65e020164\"}],"
     "\"type\": \"Array\"}";
 
+const char *dummy = "";
 const char *token2c = "{\"value\":\"1\",\"type\":\"UInt8\"}";
 const char *token3c = "{\"value\":\"2\",\"type\":\"UInt8\"}";
 const char *token4c = "{\"value\":\"3\",\"type\":\"UInt8\"}";
@@ -94,7 +95,7 @@ flow_argument_list_t arg_list_b;
 flow_argument_list_t arg_list_c;
 
 void createArgList() {
-    const parser_context_t context0;
+    const parser_context_t context0 = {(const uint8_t *) dummy, strlen(dummy), 0};
     const parser_context_t context2 = {(const uint8_t *) token2, strlen(token2), 0};
     const parser_context_t context3 = {(const uint8_t *) token3, strlen(token3), 0};
     const parser_context_t context4 = {(const uint8_t *) token4, strlen(token4), 0};
@@ -107,7 +108,7 @@ void createArgList() {
         6};
     memcpy(&arg_list, &new_arg_list, sizeof(arg_list));
 
-    const parser_context_t context0b;
+    const parser_context_t context0b = {(const uint8_t *) dummy, strlen(dummy), 0};
     const parser_context_t context2b = {(const uint8_t *) token2b, strlen(token2b), 0};
     const parser_context_t context3b = {(const uint8_t *) token3b, strlen(token3b), 0};
     const parser_context_t context4b = {(const uint8_t *) token4b, strlen(token4b), 0};
@@ -120,7 +121,7 @@ void createArgList() {
         6};
     memcpy(&arg_list_b, &new_arg_list_b, sizeof(arg_list_b));
 
-    const parser_context_t context0c;
+    const parser_context_t context0c = {(const uint8_t *) dummy, strlen(dummy), 0};
     const parser_context_t context2c = {(const uint8_t *) token2c, strlen(token2c), 0};
     const parser_context_t context3c = {(const uint8_t *) token3c, strlen(token3c), 0};
     const parser_context_t context4c = {(const uint8_t *) token4c, strlen(token4c), 0};
