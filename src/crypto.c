@@ -88,9 +88,6 @@ typedef struct {
     uint8_t r[32];
     uint8_t s[32];
     uint8_t v;
-
-    // DER signature max size should be 73
-    // https://bitcoin.stackexchange.com/questions/77191/what-is-the-maximum-size-of-a-der-encoded-ecdsa-signature#77192
     uint8_t der_signature[73];
 } __attribute__((packed)) signature_t;
 

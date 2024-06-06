@@ -32,7 +32,18 @@ typedef enum { CURVE_UNKNOWN, CURVE_SECP256K1, CURVE_SECP256R1 } curve_e;
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 #else
+/* output sizes of the supported hash algorithms */
 #define CX_SHA256_SIZE 32
+#define CX_SHA3_256_SIZE 32
+
+/* constants related to the supported elliptic curves */
+/* the currently supported curves have the same group order byte size and prime field byte size */
+#define CURVE_ORDER_SIZE 32
+#define CURVE_FIELD_SIZE 32
+#define PUB_KEY_SIZE ((2*CURVE_FIELD_SIZE)+1)
+// DER signature max size should be 73
+// https://bitcoin.stackexchange.com/questions/77191/what-is-the-maximum-size-of-a-der-encoded-ecdsa-signature#77192
+#define DER_SIG_MAX_SIZE (2*(CURVE_ORDER_SIZE+3)+3)
 #endif
 
 void sha256(const uint8_t *message, uint16_t messageLen, uint8_t message_digest[CX_SHA256_SIZE]);
