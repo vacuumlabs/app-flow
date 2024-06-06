@@ -69,7 +69,7 @@ zxerr_t crypto_extractPublicKey(const hd_path_t path,
         return zxerr_invalid_crypto_settings;
     }
 
-    if (pubKeyLen < 65) {
+    if (pubKeyLen < PUB_KEY_SIZE) {
         zemu_log_stack("extractPublicKey: zxerr_buffer_too_small");
         return zxerr_buffer_too_small;
     }
@@ -85,10 +85,10 @@ zxerr_t crypto_extractPublicKey(const hd_path_t path,
 }
 
 typedef struct {
-    uint8_t r[32];
-    uint8_t s[32];
+    uint8_t r[CURVE_ORDER_SIZE];
+    uint8_t s[CURVE_ORDER_SIZE];
     uint8_t v;
-    uint8_t der_signature[73];
+    uint8_t der_signature[DER_SIG_MAX_SIZE];
 } __attribute__((packed)) signature_t;
 
 void sha256(const uint8_t *message, uint16_t messageLen, uint8_t message_digest[CX_SHA256_SIZE]) {
@@ -129,18 +129,18 @@ zxerr_t digest_message(const uint8_t *message,
             return zxerr_ok;
         }
         case HASH_SHA3_256: {
-            if (digestMax < 32) {
+            if (digestMax < CX_SHA3_256_SIZE) {
                 return zxerr_buffer_too_small;
             }
             zemu_log_stack("sha3_256");
             cx_sha3_t sha3;
-            cx_err = cx_sha3_init_no_throw(&sha3, 256);
+            cx_err = cx_sha3_init_no_throw(&sha3, CX_SHA3_256_SIZE * 8);
             if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
             cx_err =
                 cx_hash_no_throw((cx_hash_t *) &sha3, 0, domainTag, DOMAIN_TAG_LENGTH, NULL, 0);
             if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
             cx_err =
-                cx_hash_no_throw((cx_hash_t *) &sha3, CX_LAST, message, messageLen, digest, 32);
+                cx_hash_no_throw((cx_hash_t *) &sha3, CX_LAST, message, messageLen, digest, CX_SHA3_256_SIZE);
             if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
             *digest_size = cx_hash_get_size((cx_hash_t *) &sha3);
             return zxerr_ok;
@@ -171,7 +171,7 @@ zxerr_t crypto_sign(const hd_path_t path,
 
     const digest_type_e cx_hash_kind = get_hash_type(options);
 
-    uint8_t messageDigest[32];
+    uint8_t messageDigest[CURVE_ORDER_SIZE];
     uint16_t messageDigestSize = 0;
 
     CHECK_ZXERR(digest_message(message,
@@ -182,7 +182,7 @@ zxerr_t crypto_sign(const hd_path_t path,
                                sizeof(messageDigest),
                                &messageDigestSize));
 
-    if (messageDigestSize != CX_SHA256_SIZE) {
+    if (messageDigestSize != CURVE_ORDER_SIZE) {
         zemu_log_stack("crypto_sign: zxerr_out_of_bounds");
         return zxerr_out_of_bounds;
     }
