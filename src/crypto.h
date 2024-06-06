@@ -30,12 +30,13 @@ typedef enum { HASH_UNKNOWN, HASH_SHA2_256, HASH_SHA3_256 } digest_type_e;
 
 typedef enum { CURVE_UNKNOWN, CURVE_SECP256K1, CURVE_SECP256R1 } curve_e;
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
 #else
-#define CX_SHA256_SIZE 32
+#define CX_SHA256_SIZE   32
+#define CX_SHA3_256_SIZE 32
 #endif
 
-void sha256(const uint8_t *message, uint16_t messageLen, uint8_t message_digest[CX_SHA256_SIZE]);
+zxerr_t sha256(const uint8_t *message, uint16_t messageLen, uint8_t message_digest[CX_SHA256_SIZE]);
 
 zxerr_t crypto_extractPublicKey(const hd_path_t path,
                                 const uint16_t options,

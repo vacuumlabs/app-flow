@@ -94,8 +94,14 @@ typedef struct {
     uint8_t der_signature[73];
 } __attribute__((packed)) signature_t;
 
-void sha256(const uint8_t *message, uint16_t messageLen, uint8_t message_digest[CX_SHA256_SIZE]) {
-    cx_hash_sha256(message, messageLen, message_digest, CX_SHA256_SIZE);
+zxerr_t sha256(const uint8_t *message,
+               uint16_t messageLen,
+               uint8_t message_digest[CX_SHA256_SIZE]) {
+    size_t digest_len = cx_hash_sha256(message, messageLen, message_digest, CX_SHA256_SIZE);
+    if (digest_len != CX_SHA256_SIZE) {
+        return zxerr_invalid_crypto_settings;
+    }
+    return zxerr_ok;
 }
 
 zxerr_t digest_message(const uint8_t *message,
@@ -132,7 +138,7 @@ zxerr_t digest_message(const uint8_t *message,
             return zxerr_ok;
         }
         case HASH_SHA3_256: {
-            if (digestMax < 32) {
+            if (digestMax < CX_SHA3_256_SIZE) {
                 return zxerr_buffer_too_small;
             }
             zemu_log_stack("sha3_256");
@@ -185,7 +191,17 @@ zxerr_t crypto_sign(const hd_path_t path,
                                sizeof(messageDigest),
                                &messageDigestSize));
 
-    if (messageDigestSize != CX_SHA256_SIZE) {
+    if (cx_hash_kind != HASH_SHA2_256 && cx_hash_kind != HASH_SHA3_256) {
+        zemu_log_stack("crypto_sign: zxerr_out_of_bounds");
+        return zxerr_out_of_bounds;
+    }
+
+    if (cx_hash_kind == HASH_SHA2_256 && messageDigestSize != CX_SHA256_SIZE) {
+        zemu_log_stack("crypto_sign: zxerr_out_of_bounds");
+        return zxerr_out_of_bounds;
+    }
+
+    if (cx_hash_kind == HASH_SHA3_256 && messageDigestSize != CX_SHA3_256_SIZE) {
         zemu_log_stack("crypto_sign: zxerr_out_of_bounds");
         return zxerr_out_of_bounds;
     }

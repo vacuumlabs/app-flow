@@ -45,7 +45,7 @@ zxerr_t message_parse() {
         }
     }
 
-    sha256(messageData.message, messageData.length, messageData.hash);
+    CHECK_ZXERR(sha256(messageData.message, messageData.length, messageData.hash));
     messageData.canBeDisplayed = false;
 
     if (messageData.length <= MAX_MESSAGE_SHOW_LENGTH) {
@@ -88,6 +88,9 @@ zxerr_t message_getItem(int8_t displayIdx,
                               pageCount);
                 return zxerr_ok;
             } else {
+                if (!app_mode_expert()) {
+                    return zxerr_unknown;
+                }
                 snprintf(outKey, outKeyLen, "Message too long,");
                 snprintf(outVal, outValLen, "validate hash on a secure device.");
                 return zxerr_ok;
@@ -97,6 +100,9 @@ zxerr_t message_getItem(int8_t displayIdx,
     displayIdx -= 2;
 
     if (displayIdx == 0 && !messageData.canBeDisplayed) {
+        if (!app_mode_expert()) {
+            return zxerr_unknown;
+        }
         snprintf(outKey, outKeyLen, "Message hash");
         pageStringHex(outVal,
                       outValLen,

@@ -348,7 +348,10 @@ parser_error_t _readScript(parser_context_t *c, flow_script_hash_t *s) {
     CHECK_KIND(kind, RLP_KIND_STRING)
 
     MEMZERO(s->digest, sizeof(s->digest));
-    sha256(script.buffer, script.bufferLen, s->digest);
+    zxerr_t err = sha256(script.buffer, script.bufferLen, s->digest);
+    if (err != zxerr_ok) {
+        return PARSER_UNEXPECTED_ERROR;
+    }
 
     return PARSER_OK;
 }
