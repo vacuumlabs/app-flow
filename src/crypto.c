@@ -182,9 +182,24 @@ zxerr_t crypto_sign(const hd_path_t path,
                                sizeof(messageDigest),
                                &messageDigestSize));
 
-    if (messageDigestSize != CURVE_ORDER_SIZE) {
+
+    // check the message worked properly
+    if (cx_hash_kind == HASH_SHA2_256 && messageDigestSize != CX_SHA256_SIZE) {
         zemu_log_stack("crypto_sign: zxerr_out_of_bounds");
         return zxerr_out_of_bounds;
+    }
+
+    if (cx_hash_kind == HASH_SHA3_256 && messageDigestSize != CX_SHA3_256_SIZE) {
+        zemu_log_stack("crypto_sign: zxerr_out_of_bounds");
+        return zxerr_out_of_bounds;
+    }
+
+    // check that the hashing choice doesn't reduce the curve security.
+    // it's enough to check that the digest size is larger or equal to the group order
+    // but we check the equality to make sure the algos are fully compatible.
+    if (messageDigestSize != CURVE_ORDER_SIZE) {
+        zemu_log_stack("crypto_sign: zxerr_invalid_crypto_settings");
+        return zxerr_invalid_crypto_settings;
     }
 
     size_t signatureLength;
