@@ -70,7 +70,7 @@ parser_error_t array_get_element_count(const parsed_json_t *json,
                                        uint16_t array_token_index,
                                        uint16_t *number_elements) {
     *number_elements = 0;
-    if (array_token_index < 0 || array_token_index > json->numberOfTokens) {
+    if (array_token_index > json->numberOfTokens) {
         return PARSER_NO_DATA;
     }
 
@@ -100,7 +100,7 @@ parser_error_t array_get_nth_element(const parsed_json_t *json,
                                      uint16_t array_token_index,
                                      uint16_t element_index,
                                      uint16_t *token_index) {
-    if (array_token_index < 0 || array_token_index > json->numberOfTokens) {
+    if (array_token_index > json->numberOfTokens) {
         return PARSER_NO_DATA;
     }
 
@@ -135,7 +135,7 @@ parser_error_t object_get_element_count(const parsed_json_t *json,
                                         uint16_t object_token_index,
                                         uint16_t *element_count) {
     *element_count = 0;
-    if (object_token_index < 0 || object_token_index > json->numberOfTokens) {
+    if (object_token_index > json->numberOfTokens) {
         return PARSER_NO_DATA;
     }
 
@@ -167,7 +167,7 @@ parser_error_t object_get_nth_key(const parsed_json_t *json,
                                   uint16_t object_element_index,
                                   uint16_t *token_index) {
     *token_index = object_token_index;
-    if (object_token_index < 0 || object_token_index > json->numberOfTokens) {
+    if (object_token_index > json->numberOfTokens) {
         return PARSER_NO_DATA;
     }
 
@@ -202,7 +202,7 @@ parser_error_t object_get_nth_value(const parsed_json_t *json,
                                     uint16_t object_token_index,
                                     uint16_t object_element_index,
                                     uint16_t *key_index) {
-    if (object_token_index < 0 || object_token_index > json->numberOfTokens) {
+    if (object_token_index > json->numberOfTokens) {
         return PARSER_NO_DATA;
     }
 
@@ -216,7 +216,7 @@ parser_error_t object_get_value(const parsed_json_t *json,
                                 uint16_t object_token_index,
                                 const char *key_name,
                                 uint16_t *token_index) {
-    if (object_token_index < 0 || object_token_index > json->numberOfTokens) {
+    if (object_token_index > json->numberOfTokens) {
         return PARSER_NO_DATA;
     }
 

@@ -658,6 +658,9 @@ parser_error_t parser_getItem_internal(int8_t *displayIdx,
             return PARSER_OK;
         }
     } else {
+        if (!app_mode_expert()) {
+            return PARSER_UNEXPECTED_ERROR;
+        }
         // Arbitrary message signing
         SCREEN(true) {
             snprintf(outKey, outKeyLen, "Script hash");
@@ -812,6 +815,9 @@ parser_error_t parser_getItem_internal(int8_t *displayIdx,
             return PARSER_OK;
         }
         for (size_t i = 0; i < parser_tx_obj.arguments.argCount; i++) {
+            if (!app_mode_expert()) {
+                return PARSER_UNEXPECTED_ERROR;
+            }
             SCREEN(true) {
                 return parser_printArbitraryArgument(&parser_tx_obj.arguments,
                                                      i,

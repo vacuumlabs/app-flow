@@ -216,7 +216,7 @@ Appends payload to transaction / message.
 | ------- | ------- | ---------------- | -------- |
 | Message | bytes.. | RLP data to sign |          |
 
-Signs the message without metadata (arbitrary message signing). This requires expert mode and is able to handle any transaction. The app shows script hash and tries to show transaction arguments and their types, or a message that they are too long to display.
+Signs the message without metadata (arbitrary transaction signing). This requires expert mode and is able to handle any transaction. The app shows script hash and tries to show transaction arguments and their types, or a message that they are too long to display.
 
 ##### Metadata Packet P1 = 0x03
 

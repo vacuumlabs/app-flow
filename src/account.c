@@ -62,8 +62,10 @@ zxerr_t slot_getItem(int8_t displayIdx,
     zemu_log_stack("slot_getItem");
     *pageCount = 1;
 
+    // selects workflow according to what type of slot operation was detected.
     switch (tmp_slotop) {
         case SLOT_OP_SET: {
+            // screens
             switch (displayIdx) {
                 case 0: {
                     snprintf(outKey, outKeyLen, "Set");
@@ -94,6 +96,7 @@ zxerr_t slot_getItem(int8_t displayIdx,
             const account_slot_t *oldSlot =
                 (const account_slot_t *) &N_slot_store.slot[tmp_slotIdx];
             switch (displayIdx) {
+                // screens
                 case 0: {
                     snprintf(outKey, outKeyLen, "Update");
                     snprintf(outVal, outValLen, "Account %d", tmp_slotIdx);
@@ -139,6 +142,7 @@ zxerr_t slot_getItem(int8_t displayIdx,
         case SLOT_UP_DELETE: {
             const account_slot_t *oldSlot =
                 (const account_slot_t *) &N_slot_store.slot[tmp_slotIdx];
+            // screens
             switch (displayIdx) {
                 case 0: {
                     snprintf(outKey, outKeyLen, "Delete");

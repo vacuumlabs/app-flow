@@ -45,9 +45,6 @@ typedef struct {
 
 #define SECP256_PK_LEN 65u
 
-#define COIN_AMOUNT_DECIMAL_PLACES 0  // FIXME: Adjust this
-#define COIN_SUPPORTED_TX_VERSION  0
-
 #define MENU_MAIN_APP_LINE1 "Flow"
 #define MENU_MAIN_APP_LINE2 "Ready"
 #define APPVERSION_LINE1    "Version"

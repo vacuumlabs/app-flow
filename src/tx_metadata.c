@@ -72,9 +72,13 @@ parser_error_t storeTxMetadata(const uint8_t *txMetadata, uint16_t txMetadataLen
     txMetadataState.metadataLength = txMetadataLength;
 
     // calculate the Merkle tree leaf hash
-    sha256(txMetadataState.buffer,
-           txMetadataState.metadataLength,
-           txMetadataState.metadataMerkleTreeValidationHash);
+    zxerr_t err = sha256(txMetadataState.buffer,
+                         txMetadataState.metadataLength,
+                         txMetadataState.metadataMerkleTreeValidationHash);
+    if (err != zxerr_ok) {
+        return PARSER_UNEXPECTED_ERROR;
+    }
+
     txMetadataState.metadataMerkleTreeValidationLevel = 1;
 
     return PARSER_OK;
@@ -110,7 +114,11 @@ parser_error_t validateStoredTxMetadataMerkleTreeLevel(const uint8_t *hashes, si
     }
 
     // calculate new hash of this node and store it
-    sha256(hashes, hashesLen, txMetadataState.metadataMerkleTreeValidationHash);
+    zxerr_t err = sha256(hashes, hashesLen, txMetadataState.metadataMerkleTreeValidationHash);
+    if (err != zxerr_ok) {
+        return PARSER_UNEXPECTED_ERROR;
+    }
+
     txMetadataState.metadataMerkleTreeValidationLevel += 1;
     return PARSER_OK;
 }

@@ -406,7 +406,7 @@ class Test_MESSAGE():
         for i,cfg in enumerate(test_cfg):
             _check_transaction(client, firmware, navigator, f"{test_name}/part{part}", cfg["message"], path, cfg["curve"], cfg["hash"], "message")
             part += 1
-            if i == 1:
+            if i == 0 or i == 3:
                 # Navigate in the main menu to change to expert mode          
                 util_set_expert_mode(firmware, navigator, f"{test_name}/part{part}")
                 part += 1
@@ -425,6 +425,12 @@ class Test_MESSAGE():
                 "hash": HashType.HASH_SHA2,
                 # Message with non-displayable characters
                 "message": "4d657373616765ee"
+            },
+            {
+                "curve": CurveChoice.Secp256k1,
+                "hash": HashType.HASH_SHA2,
+                # Message too long to display and expert mode is off
+                "message": 1000*"40"
             },
         ]
         

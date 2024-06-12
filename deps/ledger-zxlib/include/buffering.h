@@ -48,7 +48,7 @@ void buffering_reset();
 /// \param data
 /// \param length
 /// \return the number of appended bytes
-int buffering_append(uint8_t *data, int length);
+uint32_t buffering_append(uint8_t *data, uint32_t length);
 
 /// buffering_get_ram_buffer
 /// \return
