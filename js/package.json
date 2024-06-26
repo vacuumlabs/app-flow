@@ -1,0 +1,68 @@
+{
+  "name": "@onflow/ledger",
+  "version": "0.11.0",
+  "description": "Node API for Flow App (Ledger Nano S/X)",
+  "license": "Apache-2.0",
+  "author": "Dapper Labs <dev@dapperlabs.com>",
+  "homepage": "https://onflow.org",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:onflow/ledger-app-flow.git"
+  },
+  "contributors": [
+    {
+      "name": "Zondax GmbH"
+    },
+    {
+      "name": "Vacuumlabs"
+    }
+  ],
+  "keywords": [
+    "Ledger",
+    "Javascript",
+    "Flow"
+  ],
+  "bugs": {
+    "url": "git@github.com:onflow/ledger-app-flow.git/issues"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.10.5",
+    "@ledgerhq/hw-transport": "^6.30.5"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.10.5",
+    "@babel/core": "^7.10.5",
+    "@babel/node": "^7.10.5",
+    "@babel/plugin-transform-runtime": "^7.10.5",
+    "@babel/preset-env": "^7.10.4",
+    "babel-eslint": "^10.1.0",
+    "core-js": "^3.6.5",
+    "eslint": "^7.4.0",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-plugin-import": "^2.22.0",
+    "index.js": "^0.0.3",
+    "prettier": "^2.0.5"
+  },
+  "scripts": {
+    "build": "babel src  --copy-files --out-dir dist",
+    "test": "node test/test.js"
+  },
+  "moduleDirectories": [
+    "node_modules",
+    "dist"
+  ],
+  "postcss": {
+    "plugins": {
+      "autoprefixer": {}
+    }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

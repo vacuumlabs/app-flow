@@ -29,7 +29,7 @@ include $(BOLOS_SDK)/Makefile.defines
 APPNAME = "Flow"
 
 APPVERSION_M=0
-APPVERSION_N=12
+APPVERSION_N=13
 APPVERSION_P=0
 APPVERSION = "$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)"
 
@@ -122,7 +122,15 @@ DEFINES   += HAVE_BOLOS_APP_STACK_CANARY
 DEFINES   += LEDGER_SPECIFIC
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
-APP_STACK_SIZE:=2480
+APP_STACK_MIN_SIZE:=2480
+endif
+
+########################################
+#        Unit tests and misc           #
+########################################
+
+ifeq ($(DEBUG),1)
+DEFINES += ZEMU_LOGGING
 endif
 
 #########################

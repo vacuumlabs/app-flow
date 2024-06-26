@@ -20,9 +20,9 @@
 #include "zxmacros.h"
 #include "zxformat.h"
 #include "zxerror.h"
-#include "lib_standard_app/crypto_helpers.h"
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
+#include "lib_standard_app/crypto_helpers.h"
 #include "cx.h"
 
 __Z_INLINE digest_type_e get_hash_type(const uint16_t options) {
@@ -94,12 +94,19 @@ typedef struct {
     uint8_t der_signature[73];
 } __attribute__((packed)) signature_t;
 
-void sha256(const uint8_t *message, uint16_t messageLen, uint8_t message_digest[CX_SHA256_SIZE]) {
-    cx_hash_sha256(message, messageLen, message_digest, CX_SHA256_SIZE);
+zxerr_t sha256(const uint8_t *message,
+               uint16_t messageLen,
+               uint8_t message_digest[CX_SHA256_SIZE]) {
+    size_t digest_len = cx_hash_sha256(message, messageLen, message_digest, CX_SHA256_SIZE);
+    if (digest_len != CX_SHA256_SIZE) {
+        return zxerr_invalid_crypto_settings;
+    }
+    return zxerr_ok;
 }
 
 zxerr_t digest_message(const uint8_t *message,
                        uint16_t messageLen,
+                       const uint8_t domainTag[DOMAIN_TAG_LENGTH],
                        digest_type_e hash_kind,
                        uint8_t *digest,
                        uint16_t digestMax,
@@ -113,12 +120,25 @@ zxerr_t digest_message(const uint8_t *message,
                 zemu_log_stack("digest_message: zxerr_buffer_too_small");
                 return zxerr_buffer_too_small;
             }
-            sha256(message, messageLen, digest);
-            *digest_size = CX_SHA256_SIZE;
+            cx_sha256_t sha2;
+            cx_err = cx_sha256_init_no_throw(&sha2);
+            if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
+            cx_err =
+                cx_hash_no_throw((cx_hash_t *) &sha2, 0, domainTag, DOMAIN_TAG_LENGTH, NULL, 0);
+            if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
+            cx_err = cx_hash_no_throw((cx_hash_t *) &sha2,
+                                      CX_LAST,
+                                      message,
+                                      messageLen,
+                                      digest,
+                                      CX_SHA256_SIZE);
+            if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
+            *digest_size = cx_hash_get_size((cx_hash_t *) &sha2);
+            ;
             return zxerr_ok;
         }
         case HASH_SHA3_256: {
-            if (digestMax < 32) {
+            if (digestMax < CX_SHA3_256_SIZE) {
                 return zxerr_buffer_too_small;
             }
             zemu_log_stack("sha3_256");
@@ -126,9 +146,11 @@ zxerr_t digest_message(const uint8_t *message,
             cx_err = cx_sha3_init_no_throw(&sha3, 256);
             if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
             cx_err =
+                cx_hash_no_throw((cx_hash_t *) &sha3, 0, domainTag, DOMAIN_TAG_LENGTH, NULL, 0);
+            if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
+            cx_err =
                 cx_hash_no_throw((cx_hash_t *) &sha3, CX_LAST, message, messageLen, digest, 32);
             if (cx_err != CX_OK) return zxerr_invalid_crypto_settings;
-            zemu_log_stack("sha3_256 ready");
             *digest_size = cx_hash_get_size((cx_hash_t *) &sha3);
             return zxerr_ok;
         }
@@ -143,6 +165,7 @@ zxerr_t crypto_sign(const hd_path_t path,
                     const uint16_t options,
                     const uint8_t *message,
                     uint16_t messageLen,
+                    const uint8_t domainTag[DOMAIN_TAG_LENGTH],
                     uint8_t *buffer,
                     uint16_t bufferSize,
                     uint16_t *sigSize) {
@@ -162,12 +185,23 @@ zxerr_t crypto_sign(const hd_path_t path,
 
     CHECK_ZXERR(digest_message(message,
                                messageLen,
+                               domainTag,
                                cx_hash_kind,
                                messageDigest,
                                sizeof(messageDigest),
                                &messageDigestSize));
 
-    if (messageDigestSize != 32) {
+    if (cx_hash_kind != HASH_SHA2_256 && cx_hash_kind != HASH_SHA3_256) {
+        zemu_log_stack("crypto_sign: zxerr_out_of_bounds");
+        return zxerr_out_of_bounds;
+    }
+
+    if (cx_hash_kind == HASH_SHA2_256 && messageDigestSize != CX_SHA256_SIZE) {
+        zemu_log_stack("crypto_sign: zxerr_out_of_bounds");
+        return zxerr_out_of_bounds;
+    }
+
+    if (cx_hash_kind == HASH_SHA3_256 && messageDigestSize != CX_SHA3_256_SIZE) {
         zemu_log_stack("crypto_sign: zxerr_out_of_bounds");
         return zxerr_out_of_bounds;
     }

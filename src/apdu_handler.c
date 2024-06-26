@@ -32,6 +32,7 @@
 #include "zxformat.h"
 #include "hdpath.h"
 #include "parser_impl.h"
+#include "message.h"
 
 __Z_INLINE void handleGetPubkey(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     hasPubkey = false;
@@ -88,33 +89,67 @@ __Z_INLINE void handleGetPubkey(volatile uint32_t *flags, volatile uint32_t *tx,
 }
 
 __Z_INLINE void handleSign(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    if (!process_chunk(tx, rx)) {
-        THROW(APDU_CODE_OK);
+    zemu_log("HandleSign.\n");
+    process_chunk_response_t callType = process_chunk(tx, rx);
+
+    switch (callType) {
+        case PROCESS_CHUNK_NOT_FINISHED:
+            zemu_log("Continue processing chunks.\n");
+            THROW(APDU_CODE_OK);
+        case PROCESS_CHUNK_FINISHED_MESSAGE:;
+            zemu_log("Processing chunks finished, sign message.\n");
+            zxerr_t err = message_parse();
+            if (err != zxerr_ok) {
+                const char *error_msg = "Invalid message";
+                uint16_t error_msg_length = strlen(error_msg);
+                if (error_msg_length > sizeof(G_io_apdu_buffer)) {
+                    THROW(APDU_CODE_UNKNOWN);
+                }
+                MEMCPY(G_io_apdu_buffer, error_msg, error_msg_length);
+                *tx += (error_msg_length);
+                ZEMU_TRACE();
+                THROW(APDU_CODE_DATA_INVALID);
+            }
+            CHECK_APP_CANARY()
+            view_review_init(message_getItem, message_getNumItems, app_sign_message);
+            view_review_show(REVIEW_TXN);
+            *flags |= IO_ASYNCH_REPLY;
+            break;
+        case PROCESS_CHUNK_FINISHED_NO_METADATA:
+        case PROCESS_CHUNK_FINISHED_WITH_METADATA:;
+            zemu_log("Processing chunks finished, sign transaction.\n");
+            const char *error_msg = tx_parse(callType);
+
+            if (error_msg != NULL) {
+                uint16_t error_msg_length = strlen(error_msg);
+                if (error_msg_length >= sizeof(G_io_apdu_buffer)) {
+                    THROW(APDU_CODE_UNKNOWN);
+                }
+                MEMCPY(G_io_apdu_buffer, error_msg, error_msg_length);
+                *tx += (error_msg_length);
+                ZEMU_TRACE();
+                zemu_log(error_msg);
+                THROW(APDU_CODE_DATA_INVALID);
+            }
+            show_address = SHOW_ADDRESS_NONE;
+            loadAddressCompareHdPathFromSlot();
+
+            // if we found matching hdPath on slot 0
+            if (show_address == SHOW_ADDRESS_YES ||
+                show_address == SHOW_ADDRESS_YES_HASH_MISMATCH) {
+                checkAddressUsedInTx();
+            } else {
+                addressUsedInTx = 0;
+            }
+
+            CHECK_APP_CANARY()
+            view_review_init(tx_getItem, tx_getNumItems, app_sign);
+            view_review_show(REVIEW_TXN);
+            *flags |= IO_ASYNCH_REPLY;
+            break;
+        default:
+            THROW(APDU_CODE_INVALIDP1P2);
     }
-
-    const char *error_msg = tx_parse();
-
-    if (error_msg != NULL) {
-        int error_msg_length = strlen(error_msg);
-        MEMCPY(G_io_apdu_buffer, error_msg, error_msg_length);
-        *tx += (error_msg_length);
-        THROW(APDU_CODE_DATA_INVALID);
-    }
-
-    show_address = SHOW_ADDRESS_NONE;
-    loadAddressCompareHdPathFromSlot();
-
-    // if we found matching hdPath on slot 0
-    if (show_address == SHOW_ADDRESS_YES || show_address == SHOW_ADDRESS_YES_HASH_MISMATCH) {
-        checkAddressUsedInTx();
-    } else {
-        addressUsedInTx = 0;
-    }
-
-    CHECK_APP_CANARY()
-    view_review_init(tx_getItem, tx_getNumItems, app_sign);
-    view_review_show(REVIEW_TXN);
-    *flags |= IO_ASYNCH_REPLY;
 }
 
 __Z_INLINE void handleSlotStatus(__Z_UNUSED volatile uint32_t *flags,
@@ -171,10 +206,6 @@ __Z_INLINE void handleGetSlot(__Z_UNUSED volatile uint32_t *flags,
 __Z_INLINE void handleSetSlot(volatile uint32_t *flags,
                               __Z_UNUSED volatile uint32_t *tx,
                               uint32_t rx) {
-    if (rx != 5 + 1 + 8 + 20 + 2) {
-        THROW(APDU_CODE_DATA_INVALID);
-    }
-
     zxerr_t err = slot_parseSlot(G_io_apdu_buffer + OFFSET_DATA, rx - OFFSET_DATA);
     if (err != zxerr_ok) {
         THROW(APDU_CODE_DATA_INVALID);

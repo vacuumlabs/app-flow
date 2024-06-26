@@ -36,7 +36,7 @@ parser_error_t rlp_decode(const parser_context_t *input,
     CHECK_AVAILABLE(input, 1)
     uint8_t p = *outputPayload->buffer;
 
-    if (p >= 0 && p <= 0x7F) {
+    if (p <= 0x7F) {
         *outputKind = RLP_KIND_STRING;
         outputPayload->bufferLen = 1;
         outputPayload->buffer += 0;
@@ -80,7 +80,7 @@ parser_error_t rlp_decode(const parser_context_t *input,
         return PARSER_OK;
     }
 
-    if (p >= 0xf8 && p <= 0xff) {
+    if (p >= 0xf8) {
         *outputKind = RLP_KIND_LIST;
         const uint8_t len_len = p - 0xf7;
         CHECK_AVAILABLE(input, 1 + len_len)

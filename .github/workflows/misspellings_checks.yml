@@ -26,4 +26,4 @@ jobs:
       with:
         builtin: clear,rare
         check_filenames: true
-        skip: ./deps/jsmn/test/tests.c
+        skip: ./deps/jsmn/test/tests.c, ./transaction_metadata/manifest.mainnet.json, ./transaction_metadata/manifest.testnet.json,

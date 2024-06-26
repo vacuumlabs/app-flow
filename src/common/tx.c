@@ -20,6 +20,7 @@
 #include "parser_tx.h"
 #include <string.h>
 #include "zxmacros.h"
+#include "app_mode.h"
 
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
 #define RAM_BUFFER_SIZE   8192
@@ -51,15 +52,12 @@ const uint8_t TX_DOMAIN_TAG[DOMAIN_TAG_LENGTH] = {
     0x63, 0x74, 0x69, 0x6F, 0x6E, 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
 };
 
-#define TX_BUFFER_OFFSET DOMAIN_TAG_LENGTH
-
 void tx_initialize() {
     buffering_init(ram_buffer, sizeof(ram_buffer), (uint8_t *) N_appdata.buffer, FLASH_BUFFER_SIZE);
 }
 
 void tx_reset() {
     buffering_reset();
-    buffering_append((uint8_t *) TX_DOMAIN_TAG, DOMAIN_TAG_LENGTH);
 }
 
 uint32_t tx_append(unsigned char *buffer, uint32_t length) {
@@ -67,35 +65,52 @@ uint32_t tx_append(unsigned char *buffer, uint32_t length) {
 }
 
 uint32_t tx_get_buffer_length() {
-    if (buffering_get_buffer()->pos >= TX_BUFFER_OFFSET) {
-        return buffering_get_buffer()->pos - TX_BUFFER_OFFSET;
-    }
-    return 0;
-}
-
-uint32_t get_signable_length() {
     return buffering_get_buffer()->pos;
 }
 
 uint8_t *tx_get_buffer() {
-    return buffering_get_buffer()->data + TX_BUFFER_OFFSET;
-}
-
-uint8_t *get_signable() {
     return buffering_get_buffer()->data;
 }
 
-const char *tx_parse() {
+const char *tx_parse(process_chunk_response_t typeOfCall) {
+    // parse tx
     uint8_t err = parser_parse(&ctx_parsed_tx, tx_get_buffer(), tx_get_buffer_length());
 
     if (err != PARSER_OK) {
+        ZEMU_TRACE();
         return parser_getErrorDescription(err);
     }
 
-    err = parser_validate(&ctx_parsed_tx);
+    // parse metadata
+    parser_tx_obj.metadataInitialized = false;
+    switch (typeOfCall) {
+        case PROCESS_CHUNK_FINISHED_WITH_METADATA:
+            MEMZERO(&parser_tx_obj.metadata, sizeof(parser_tx_obj.metadata));
+            err = parseTxMetadata(parser_tx_obj.hash.digest, &parser_tx_obj.metadata);
+            if (err != PARSER_OK) {
+                ZEMU_TRACE();
+                return parser_getErrorDescription(err);
+            }
+            parser_tx_obj.metadataInitialized = true;
+            break;
+        case PROCESS_CHUNK_FINISHED_NO_METADATA:
+            if (!app_mode_expert()) {  // we do not need metadata for these scripts, but this
+                                       // workflow should work only in expert mode
+                ZEMU_TRACE();
+                return parser_getErrorDescription(PARSER_UNEXPECTED_SCRIPT);
+            }
+            break;
+        default:
+            ZEMU_TRACE();
+            return parser_getErrorDescription(PARSER_UNEXPECTED_ERROR);
+    }
+
     CHECK_APP_CANARY()
 
+    // validate
+    err = parser_validate(&ctx_parsed_tx);
     if (err != PARSER_OK) {
+        ZEMU_TRACE();
         return parser_getErrorDescription(err);
     }
 
