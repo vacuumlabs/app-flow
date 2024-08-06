@@ -131,7 +131,6 @@ def util_set_expert_mode(
     else:
         instructions = [
             NavInsID.USE_CASE_HOME_SETTINGS,
-            NavInsID.USE_CASE_SETTINGS_NEXT,
             NavIns(NavInsID.TOUCH, (340, 128)),
             NavInsID.USE_CASE_SETTINGS_MULTI_PAGE_EXIT
         ]

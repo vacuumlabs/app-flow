@@ -24,6 +24,7 @@
 #include "nbgl_use_case.h"
 #include "ux.h"
 #include "view_internal.h"
+#include "menu_handler.h"
 
 #ifdef APP_SECRET_MODE_ENABLED
 zxerr_t secret_enabled();
@@ -72,6 +73,7 @@ typedef enum {
     EXPERT_MODE_TOKEN = FIRST_USER_TOKEN,
     ACCOUNT_MODE_TOKEN,
     SECRET_MODE_TOKEN,
+    REVIEW_ADDRESS_TOKEN,
 } config_token_e;
 
 void app_quit(void) {
@@ -91,8 +93,8 @@ static void view_idle_show_impl_callback() { view_idle_show_impl(0, NULL); }
 #define MAX_INFO_LIST_ITEM_PER_PAGE 2
 #endif
 
-static const char *const INFO_KEYS_PAGE[] = {"Version", "Developed by", "Website", "License"};
-static const char *const INFO_VALUES_PAGE[] = {APPVERSION, "Zondax AG", "https://zondax.ch", "Apache 2.0"};
+static const char *const INFO_KEYS_PAGE[] = {"Version", "License"};
+static const char *const INFO_VALUES_PAGE[] = {APPVERSION, "Apache 2.0"};
 
 static void h_expert_toggle() { app_mode_set_expert(!app_mode_expert()); }
 
@@ -112,6 +114,10 @@ static void reviewTransactionChoice(bool confirm) {
     } else {
         nbgl_useCaseReviewStatus(STATUS_TYPE_TRANSACTION_REJECTED, h_reject_internal);
     }
+}
+
+static void h_view_address() {
+    handleMenuShowAddress();
 }
 
 static void reviewGenericChoice(bool confirm) {
@@ -270,20 +276,22 @@ static bool settings_screen_callback(uint8_t page, nbgl_pageContent_t *content) 
         }
 
         // Info page 1
+        // We have just two elements, which fits one screen.
+        // It allows to keep three setting pages, while adding "Show address"
         case 1: {
             content->type = INFOS_LIST;
-            content->infosList.nbInfos = MAX_INFO_LIST_ITEM_PER_PAGE;
+            content->infosList.nbInfos = infoElements;
             content->infosList.infoContents = INFO_VALUES_PAGE;
             content->infosList.infoTypes = INFO_KEYS_PAGE;
             break;
         }
 
-        // Info page 2
         case 2: {
-            content->type = INFOS_LIST;
-            content->infosList.nbInfos = infoElements - MAX_INFO_LIST_ITEM_PER_PAGE;
-            content->infosList.infoContents = &INFO_VALUES_PAGE[MAX_INFO_LIST_ITEM_PER_PAGE];
-            content->infosList.infoTypes = &INFO_KEYS_PAGE[MAX_INFO_LIST_ITEM_PER_PAGE];
+            content->type = INFO_BUTTON;
+            content->infoButton.text = "Show address";
+            content->infoButton.icon = NULL;
+            content->infoButton.buttonText = "Review address";
+            content->infoButton.buttonToken = REVIEW_ADDRESS_TOKEN;
             break;
         }
 
@@ -312,6 +320,10 @@ static void settings_toggle_callback(int token, __Z_UNUSED uint8_t index) {
             secret_enabled();
             break;
 #endif
+
+        case REVIEW_ADDRESS_TOKEN:
+            h_view_address();
+            break;
 
         default:
             ZEMU_LOGF(50, "Toggling setting not found\n")

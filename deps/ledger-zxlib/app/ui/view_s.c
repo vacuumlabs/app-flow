@@ -29,6 +29,7 @@
 #include "zxutils_ledger.h"
 #include "view_nano.h"
 #include "view_nano_inspect.h"
+#include "menu_handler.h"
 
 #define BAGL_WIDTH 128
 #define BAGL_HEIGHT 32
@@ -44,6 +45,7 @@ static void h_expert_update();
 static void h_review_button_left();
 static void h_review_button_right();
 static void h_review_button_both();
+static void h_view_address();
 
 bool is_accept_item();
 void set_accept_item();
@@ -96,6 +98,7 @@ const ux_menu_entry_t menu_main[] = {
 #endif
 
     {NULL, NULL, 0, &C_icon_app, APPVERSION_LINE1, APPVERSION_LINE2, 33, 12},
+    {NULL, h_view_address, 0, &C_icon_app, "View", "address", 33, 12},
 
     {NULL,
 #ifdef APP_SECRET_MODE_ENABLED
@@ -103,10 +106,9 @@ const ux_menu_entry_t menu_main[] = {
 #else
      NULL,
 #endif
-     0, &C_icon_app, "Developed by:", "Zondax.ch", 33, 12},
-
-    {NULL, NULL, 0, &C_icon_app, "License: ", "Apache 2.0", 33, 12},
-    {NULL, os_exit, 0, &C_icon_dashboard, "Quit", NULL, 50, 29},
+     0, &C_icon_app, "License: ", "Apache 2.0", 33, 12},
+     
+         {NULL, os_exit, 0, &C_icon_dashboard, "Quit", NULL, 50, 29},
     UX_MENU_END
 };
 
@@ -114,7 +116,6 @@ const ux_menu_entry_t menu_initialize[] = {
     {NULL, NULL, 0, &C_icon_app, MENU_MAIN_APP_LINE1, "Not Ready", 33, 12},
     {NULL, h_initialize, 0, &C_icon_app, "Click to", "Initialize", 33, 12},
     {NULL, NULL, 0, &C_icon_app, APPVERSION_LINE1, APPVERSION_LINE2, 33, 12},
-    {NULL, NULL, 0, &C_icon_app, "Developed by:", "Zondax.ch", 33, 12},
     {NULL, NULL, 0, &C_icon_app, "License: ", "Apache 2.0", 33, 12},
     {NULL, os_exit, 0, &C_icon_dashboard, "Quit", NULL, 50, 29},
     UX_MENU_END
@@ -246,6 +247,10 @@ const bagl_element_t *view_prepro_idle(const bagl_element_t *element) {
             return NULL;
     }
     return element;
+}
+
+static void h_view_address() {
+    handleMenuShowAddress();
 }
 
 void h_review_update() {
