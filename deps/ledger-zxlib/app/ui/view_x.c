@@ -1,5 +1,5 @@
 /*******************************************************************************
-*   (c) 2018 - 2022 Zondax AG
+*   (c) 2018 - 2023 Zondax AG
 *   (c) 2016 Ledger
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +31,6 @@
 #include "tx.h"
 #include "view_nano.h"
 #include "view_nano_inspect.h"
-#include "menu_handler.h"
 
 #ifdef APP_SECRET_MODE_ENABLED
 #include "secret.h"
@@ -49,7 +48,6 @@ static void h_expert_update();
 static void h_review_loop_start();
 static void h_review_loop_inside();
 static void h_review_loop_end();
-static void h_view_address();
 
 #ifdef APP_SECRET_MODE_ENABLED
 static void h_secret_click();
@@ -79,14 +77,14 @@ extern unsigned int review_type;
 UX_STEP_NOCB(ux_idle_flow_1_step, pbb, { &C_icon_app, MENU_MAIN_APP_LINE1, viewdata.key,});
 UX_STEP_CB_INIT(ux_idle_flow_2_step, bn,  h_expert_update(), h_expert_toggle(), { "Expert mode:", viewdata.value, });
 UX_STEP_NOCB(ux_idle_flow_3_step, bn, { APPVERSION_LINE1, APPVERSION_LINE2, });
-UX_STEP_CB(ux_idle_flow_4_step, bn, h_view_address(), { "View", "address", });
 
 #ifdef APP_SECRET_MODE_ENABLED
-UX_STEP_CB(ux_idle_flow_5_step, bn, h_secret_click(), { "License:", "Apache 2.0", });
+UX_STEP_CB(ux_idle_flow_4_step, bn, h_secret_click(), { "Developed by:", "Zondax.ch", });
 #else
-UX_STEP_NOCB(ux_idle_flow_5_step, bn, { "License:", "Apache 2.0", });
+UX_STEP_NOCB(ux_idle_flow_4_step, bn, { "Developed by:", "Zondax.ch", });
 #endif
 
+UX_STEP_NOCB(ux_idle_flow_5_step, bn, { "License:", "Apache 2.0", });
 UX_STEP_CB(ux_idle_flow_6_step, pb, os_sched_exit(-1), { &C_icon_dashboard, "Quit",});
 
 #ifdef APP_ACCOUNT_MODE_ENABLED
@@ -164,6 +162,7 @@ UX_FLOW(
 UX_FLOW_DEF_NOCB(ux_review_flow_1_review_title, pbb, { &C_icon_app, REVIEW_SCREEN_TITLE, REVIEW_SCREEN_TXN_VALUE,});
 UX_FLOW_DEF_NOCB(ux_review_flow_2_review_title, pbb, { &C_icon_app, REVIEW_SCREEN_TITLE, REVIEW_SCREEN_ADDR_VALUE,});
 UX_FLOW_DEF_NOCB(ux_review_flow_3_review_title, pbb, { &C_icon_app, "Review", "configuration",});
+UX_FLOW_DEF_NOCB(ux_review_flow_4_review_title, pbb, { &C_icon_app, REVIEW_MSG_TITLE, REVIEW_MSG_VALUE, });
 
 UX_STEP_INIT(ux_review_flow_2_start_step, NULL, NULL, { h_review_loop_start(); });
 #ifdef HAVE_INSPECT
@@ -174,6 +173,7 @@ UX_STEP_NOCB_INIT(ux_review_flow_2_step, bnnn_paging, { h_review_loop_inside(); 
 UX_STEP_INIT(ux_review_flow_2_end_step, NULL, NULL, { h_review_loop_end(); });
 UX_STEP_VALID(ux_review_flow_3_step, pb, h_approve(0), { &C_icon_validate_14, APPROVE_LABEL });
 UX_STEP_VALID(ux_review_flow_4_step, pb, h_reject(review_type), { &C_icon_crossmark, REJECT_LABEL });
+UX_STEP_VALID(ux_review_flow_6_step, pb, h_approve(0), {&C_icon_validate_14, "Ok"});
 
 UX_STEP_CB_INIT(ux_review_flow_5_step, pb,  NULL, h_shortcut(0), { &C_icon_eye, SHORTCUT_STR });
 
@@ -378,7 +378,9 @@ void view_initialize_show_impl(__Z_UNUSED uint8_t item_idx, const char *statusSt
      ux_flow_init(0, ux_menu_initialize, NULL);
 }
 
-void view_review_show_impl(unsigned int requireReply){
+void view_review_show_impl(unsigned int requireReply, const char *title, const char *validate){
+    UNUSED(title);
+    UNUSED(validate);
     review_type = requireReply;
     h_paging_init();
     h_paging_decrease();
@@ -399,30 +401,38 @@ void run_root_txn_flow() {
 void run_ux_review_flow(review_type_e reviewType, const ux_flow_step_t* const start_step) {
     uint8_t index = 0;
 
-    switch (reviewType)
-    {
-    case REVIEW_UI:
-        ux_review_flow[index++] = &ux_review_flow_3_review_title;
-        break;
+    switch (reviewType) {
+        case REVIEW_UI:
+            ux_review_flow[index++] = &ux_review_flow_3_review_title;
+            break;
 
-    case REVIEW_ADDRESS:
-        ux_review_flow[index++] = &ux_review_flow_2_review_title;
-        break;
+        case REVIEW_ADDRESS:
+            ux_review_flow[index++] = &ux_review_flow_2_review_title;
+            break;
 
-    case REVIEW_TXN:
-    default:
-        ux_review_flow[index++] = &ux_review_flow_1_review_title;
-        if(app_mode_shortcut()) {
-            ux_review_flow[index++] = &ux_review_flow_5_step;
-        }
-        break;
+        case REVIEW_MSG:
+            ux_review_flow[index++] = &ux_review_flow_4_review_title;
+            break;
+
+        case REVIEW_GENERIC:
+        case REVIEW_TXN:
+        default:
+            ux_review_flow[index++] = &ux_review_flow_1_review_title;
+            if(app_mode_shortcut()) {
+                ux_review_flow[index++] = &ux_review_flow_5_step;
+            }
+            break;
     }
 
     ux_review_flow[index++] = &ux_review_flow_2_start_step;
     ux_review_flow[index++] = &ux_review_flow_2_step;
     ux_review_flow[index++] = &ux_review_flow_2_end_step;
-    ux_review_flow[index++] = &ux_review_flow_3_step;
-    ux_review_flow[index++] = &ux_review_flow_4_step;
+    if (reviewType == REVIEW_MSG) {
+        ux_review_flow[index++] = &ux_review_flow_6_step;
+    } else {
+        ux_review_flow[index++] = &ux_review_flow_3_step;
+        ux_review_flow[index++] = &ux_review_flow_4_step;
+    }
     ux_review_flow[index++] = FLOW_END_STEP;
 
     ux_flow_init(0, ux_review_flow, start_step);
@@ -453,10 +463,4 @@ void view_custom_error_show_impl() {
     }
     ux_flow_init(0, ux_custom_error_flow, NULL);
 }
-
-static void h_view_address() {
-    handleMenuShowAddress();
-//    view_review_show_impl();
-}
-
 #endif

@@ -65,7 +65,11 @@ void view_initialize_init(viewfunc_initialize_t viewFuncInit) {
 
 void view_review_show(review_type_e reviewKind) {
     // Set > 0 to reply apdu message
-    view_review_show_impl((unsigned int)reviewKind);
+    view_review_show_impl((unsigned int)reviewKind, NULL, NULL);
+}
+
+void view_review_show_generic(review_type_e reviewKind, const char *title, const char *validate) {
+    view_review_show_impl((unsigned int)reviewKind, title, validate);
 }
 
 void view_initialize_show(uint8_t item_idx, const char *statusString) {
@@ -88,7 +92,7 @@ void h_reject(unsigned int requireReply) {
     view_idle_show(0, NULL);
     UX_WAIT();
 
-    if (requireReply != REVIEW_UI) {
+    if (requireReply != REVIEW_UI && requireReply != REVIEW_MSG) {
         app_reject();
     }
 }
