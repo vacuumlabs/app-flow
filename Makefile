@@ -133,6 +133,10 @@ ifeq ($(DEBUG),1)
 DEFINES += ZEMU_LOGGING
 endif
 
+ifeq ($(PRODUCTION_BUILD),1)
+DEFINES += PRODUCTION_BUILD=1
+endif
+
 #########################
 
 # Import generic rules from the SDK
