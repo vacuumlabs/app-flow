@@ -10,7 +10,7 @@
 
 This repository contains:
 
-- Ledger Nano S/Nano X/Nano SPlus/STAX BOLOS app
+- Ledger Nano S/Nano X/Nano SPlus/STAX/FLEX BOLOS app
 - Specs / Documentation
 - Ledger ragger tests
 
@@ -54,7 +54,7 @@ make BOLOS_SDK=$STAX_SDK
 make BOLOS_SDK=$FLEX_SDK
 ```
 
-Stax app can be compiled in DEBUG mode for debugging purposes
+Stax and flex app can be compiled in DEBUG mode for debugging purposes
 ```shell
 make BOLOS_SDK=$STAX_SDK DEBUG=1
 ```
@@ -212,8 +212,9 @@ You can choose which device to compile and load for by setting the `BOLOS_SDK` e
 - `BOLOS_SDK=$NANOX_SDK`
 - `BOLOS_SDK=$NANOSP_SDK`
 - `BOLOS_SDK=$STAX_SDK`
+- `BOLOS_SDK=$FLEX_SDK`
 
-For Stax device you can compile 
+For Stax and FLEX device you can compile 
 ```shell
 make BOLOS_SDK=$STAX_SDK DEBUG=1  # compile optionally with PRINTF
 ```
