@@ -33,7 +33,7 @@
 #include "nbgl_use_case.h"
 #define MAX_LINES_PER_PAGE_REVIEW NB_MAX_LINES_IN_REVIEW
 #define MAX_CHARS_PER_KEY_LINE 64
-#define MAX_CHARS_PER_VALUE1_LINE 120  //we experienced a crash wih 180
+#define MAX_CHARS_PER_VALUE1_LINE 120
 #define MAX_CHARS_HEXMESSAGE 160
 #else
 #ifndef MAX_CHARS_PER_VALUE_LINE
@@ -47,6 +47,10 @@
 
 // This takes data from G_io_apdu_buffer that is prefilled with the address
 
+#if defined(APP_BLINDSIGN_MODE_ENABLED)
+#define APPROVE_LABEL_1 "ACCEPT RISK"
+#define APPROVE_LABEL_2 "AND APPROVE"
+#endif
 #define APPROVE_LABEL "APPROVE"
 #define REJECT_LABEL "REJECT"
 
@@ -61,11 +65,24 @@
 #define REVIEW_SCREEN_ADDR_VALUE "review"
 #endif
 
+#ifdef APP_BLINDSIGN_MODE_ENABLED
+#define REVIEW_BLINDSIGN_MESSAGE_TITLE "Warning"
+#define REVIEW_BLINDSIGN_MESSAGE_VALUE \
+    "Tx details not verifiable. "      \
+    "Could lose all assets"
+#endif
+
 static const char *review_key = REVIEW_SCREEN_TITLE;
 static const char *review_txvalue = REVIEW_SCREEN_TXN_VALUE;
 static const char *review_addrvalue = REVIEW_SCREEN_ADDR_VALUE;
 static const char *review_keyconfig = "Review";
 static const char *review_configvalue = "configuration";
+static const char *review_skip_key = "Warning";
+static const char *review_skip_value = "BlindSign";
+static const char *review_skip_key_msg = "Tx details";
+static const char *review_skip_value_msg = "not verifiable";
+static const char *review_skip_key_msg_2 = "Could lose";
+static const char *review_skip_value_msg_2 = "all assets";
 
 // Review msg string can be customizable in each app
 #if !defined(REVIEW_MSG_TITLE) && !defined(REVIEW_MSG_VALUE)
@@ -80,7 +97,9 @@ static const char *shortcut_key = SHORTCUT_TITLE;
 static const char *shortcut_value = SHORTCUT_VALUE;
 
 #if defined(TARGET_NANOS)
-#if defined(REVIEW_SCREEN_ENABLED) && defined(SHORTCUT_MODE_ENABLED)
+#if defined(APP_BLINDSIGN_MODE_ENABLED)
+#define INTRO_PAGES 3
+#elif defined(REVIEW_SCREEN_ENABLED) && defined(SHORTCUT_MODE_ENABLED)
 #define INTRO_PAGES 2
 #elif defined(REVIEW_SCREEN_ENABLED) || defined(SHORTCUT_MODE_ENABLED)
 #define INTRO_PAGES 1
@@ -133,6 +152,28 @@ typedef struct {
     uint8_t pageCount;
 
     inner_state_t innerField;
+#if defined(TARGET_NANOS) || defined(TARGET_NANOS2) || defined(TARGET_NANOX)
+    /**
+     * @brief Determines whether to prompt the user for confirmation during the review process.
+     *
+     * When `with_confirmation` is set to `true`, the engine will display a confirmation prompt
+     * to the user after each item review. This allows the user to either continue reviewing items
+     * or proceed to the final approval step.
+     *
+     * If `with_confirmation` is set to `false`, the engine will skip the confirmation prompts
+     * forcing users to review all items until they get to the approval menu.
+     *
+     * **Applicable Targets:**
+     * - Ledger Nano S (TARGET_NANOS)
+     * - Ledger Nano S2 (TARGET_NANOS2)
+     * - Ledger Nano X (TARGET_NANOX)
+     *
+     * **Excluded Targets:**
+     * - Stax
+     * - Flex
+     */
+    bool with_confirmation;
+#endif
 } view_t;
 
 typedef enum {
@@ -167,6 +208,8 @@ void view_message_impl(const char *title, const char *message);
 void view_error_show_impl();
 
 void view_custom_error_show_impl();
+
+void view_blindsign_error_show_impl();
 
 void h_paging_init();
 

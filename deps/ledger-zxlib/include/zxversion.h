@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   (c) 2018 - 2022 Zondax GmbH
+ *   (c) 2018 - 2024 Zondax AG
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,6 +15,6 @@
  ********************************************************************************/
 #pragma once
 
-#define ZXLIB_MAJOR 28
-#define ZXLIB_MINOR 0
-#define ZXLIB_PATCH 7
+#define ZXLIB_MAJOR 30
+#define ZXLIB_MINOR 1
+#define ZXLIB_PATCH 3

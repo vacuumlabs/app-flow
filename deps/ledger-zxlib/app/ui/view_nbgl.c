@@ -24,7 +24,6 @@
 #include "nbgl_use_case.h"
 #include "ux.h"
 #include "view_internal.h"
-#include "menu_handler.h"
 
 #ifdef APP_SECRET_MODE_ENABLED
 zxerr_t secret_enabled();
@@ -38,7 +37,8 @@ zxerr_t account_enabled();
 #define APPROVE_LABEL_NBGL_GENERIC "Accept operation?"
 #define CANCEL_LABEL "Cancel"
 #define VERIFY_TITLE_LABEL_GENERIC "Verify operation"
-
+#define INFO_LIST_SIZE 4
+#define SETTING_CONTENTS_NB 1
 static const char HOME_TEXT[] =
     "This application enables\nsigning transactions on the\n" MENU_MAIN_APP_LINE1 " network";
 
@@ -55,8 +55,6 @@ static nbgl_layoutTagValue_t pairs[NB_MAX_DISPLAYED_PAIRS_IN_REVIEW];
 static nbgl_layoutTagValue_t pair;
 static nbgl_layoutTagValueList_t pairList;
 
-static nbgl_layoutSwitch_t settings[4];
-
 static nbgl_layoutTagValueList_t *extraPagesPtr = NULL;
 
 typedef enum {
@@ -67,13 +65,17 @@ typedef enum {
 #ifdef APP_SECRET_MODE_ENABLED
     SECRET_MODE,
 #endif
+#ifdef APP_BLINDSIGN_MODE_ENABLED
+    BLINDSIGN_MODE,
+#endif
+    SETTINGS_SWITCHES_NB_LEN
 } settings_list_e;
 
 typedef enum {
     EXPERT_MODE_TOKEN = FIRST_USER_TOKEN,
     ACCOUNT_MODE_TOKEN,
     SECRET_MODE_TOKEN,
-    REVIEW_ADDRESS_TOKEN,
+    BLINDSIGN_MODE_TOKEN,
 } config_token_e;
 
 void app_quit(void) {
@@ -85,18 +87,24 @@ static void h_reject_internal(void) { h_reject(review_type); }
 
 static void h_approve_internal(void) { h_approve(review_type); }
 
-static void view_idle_show_impl_callback() { view_idle_show_impl(0, NULL); }
-
 #ifdef TARGET_STAX
 #define MAX_INFO_LIST_ITEM_PER_PAGE 3
 #else  // TARGET_FLEX
 #define MAX_INFO_LIST_ITEM_PER_PAGE 2
 #endif
 
-static const char *const INFO_KEYS_PAGE[] = {"Version", "License"};
-static const char *const INFO_VALUES_PAGE[] = {APPVERSION, "Apache 2.0"};
+static const char *const INFO_KEYS_PAGE[] = {"Version", "Developed by", "Website", "License"};
+static const char *const INFO_VALUES_PAGE[] = {APPVERSION, "Zondax AG", "https://zondax.ch", "Apache 2.0"};
+
+static nbgl_contentInfoList_t infoList = {0};
+static nbgl_genericContents_t settingContents = {0};
+static nbgl_contentSwitch_t switches[SETTINGS_SWITCHES_NB_LEN];
 
 static void h_expert_toggle() { app_mode_set_expert(!app_mode_expert()); }
+
+#ifdef APP_BLINDSIGN_MODE_ENABLED
+static void h_blindsign_toggle() { app_mode_set_blindsign(!app_mode_blindsign()); }
+#endif
 
 static void confirm_error(__Z_UNUSED bool confirm) { h_error_accept(0); }
 
@@ -114,10 +122,6 @@ static void reviewTransactionChoice(bool confirm) {
     } else {
         nbgl_useCaseReviewStatus(STATUS_TYPE_TRANSACTION_REJECTED, h_reject_internal);
     }
-}
-
-static void h_view_address() {
-    handleMenuShowAddress();
 }
 
 static void reviewGenericChoice(bool confirm) {
@@ -161,6 +165,11 @@ void view_custom_error_show(const char *upper, const char *lower) {
     snprintf(viewdata.value, MAX_CHARS_PER_VALUE1_LINE, "%s", lower);
 
     nbgl_useCaseChoice(&C_Important_Circle_64px, viewdata.key, viewdata.value, "Ok", "", confirm_error);
+}
+
+void view_blindsign_error_show() {
+    nbgl_useCaseChoice(&C_Warning_64px, "This message cannot\nbe clear-signed",
+                       "Enable blind-signing in\nthe settings to sign\nthis transaction.", "Exit", "", confirm_error);
 }
 
 void view_error_show_impl() {
@@ -239,71 +248,10 @@ void h_review_update() {
     }
 }
 
-static bool settings_screen_callback(uint8_t page, nbgl_pageContent_t *content) {
-    const uint16_t infoElements = sizeof(INFO_KEYS_PAGE) / sizeof(INFO_KEYS_PAGE[0]);
-    switch (page) {
-        case 0: {
-            // Config
-            content->type = SWITCHES_LIST;
-            content->switchesList.nbSwitches = 1;
-            content->switchesList.switches = settings;
+void settings_toggle_callback(int token, uint8_t index, int page) {
+    UNUSED(index);
+    UNUSED(page);
 
-            settings[0].initState = app_mode_expert();
-            settings[0].text = "Expert mode";
-            settings[0].tuneId = TUNE_TAP_CASUAL;
-            settings[0].token = EXPERT_MODE_TOKEN;
-
-#ifdef APP_ACCOUNT_MODE_ENABLED
-            if (app_mode_expert() || app_mode_account()) {
-                settings[ACCOUNT_MODE].initState = app_mode_account();
-                settings[ACCOUNT_MODE].text = "Crowdloan account";
-                settings[ACCOUNT_MODE].tuneId = TUNE_TAP_CASUAL;
-                settings[ACCOUNT_MODE].token = ACCOUNT_MODE_TOKEN;
-                content->switchesList.nbSwitches++;
-            }
-#endif
-
-#ifdef APP_SECRET_MODE_ENABLED
-            if (app_mode_expert() || app_mode_secret()) {
-                settings[SECRET_MODE].initState = app_mode_secret();
-                settings[SECRET_MODE].text = "Secret mode";
-                settings[SECRET_MODE].tuneId = TUNE_TAP_CASUAL;
-                settings[SECRET_MODE].token = SECRET_MODE_TOKEN;
-                content->switchesList.nbSwitches++;
-            }
-#endif
-            break;
-        }
-
-        // Info page 1
-        // We have just two elements, which fits one screen.
-        // It allows to keep three setting pages, while adding "Show address"
-        case 1: {
-            content->type = INFOS_LIST;
-            content->infosList.nbInfos = infoElements;
-            content->infosList.infoContents = INFO_VALUES_PAGE;
-            content->infosList.infoTypes = INFO_KEYS_PAGE;
-            break;
-        }
-
-        case 2: {
-            content->type = INFO_BUTTON;
-            content->infoButton.text = "Show address";
-            content->infoButton.icon = NULL;
-            content->infoButton.buttonText = "Review address";
-            content->infoButton.buttonToken = REVIEW_ADDRESS_TOKEN;
-            break;
-        }
-
-        default:
-            ZEMU_LOGF(50, "Incorrect settings page: %d\n", page)
-            return false;
-    }
-
-    return true;
-}
-
-static void settings_toggle_callback(int token, __Z_UNUSED uint8_t index) {
     switch (token) {
         case EXPERT_MODE_TOKEN:
             h_expert_toggle();
@@ -321,9 +269,11 @@ static void settings_toggle_callback(int token, __Z_UNUSED uint8_t index) {
             break;
 #endif
 
-        case REVIEW_ADDRESS_TOKEN:
-            h_view_address();
+#ifdef APP_BLINDSIGN_MODE_ENABLED
+        case BLINDSIGN_MODE_TOKEN:
+            h_blindsign_toggle();
             break;
+#endif
 
         default:
             ZEMU_LOGF(50, "Toggling setting not found\n")
@@ -331,13 +281,46 @@ static void settings_toggle_callback(int token, __Z_UNUSED uint8_t index) {
     }
 }
 
-void setting_screen() {
-    // Set return button top-left (true) botton-left (false)
-    const bool return_button_top_left = false;
-    const uint8_t init_page = 0;
-    const uint8_t settings_pages = 3;
-    nbgl_useCaseSettings(MENU_MAIN_APP_LINE1, init_page, settings_pages, return_button_top_left,
-                         view_idle_show_impl_callback, settings_screen_callback, settings_toggle_callback);
+static void settings_screen_callback(uint8_t index, nbgl_content_t *content) {
+    UNUSED(index);
+    switches[EXPERT_MODE].initState = app_mode_expert();
+    switches[EXPERT_MODE].text = "Expert mode";
+    switches[EXPERT_MODE].subText = "";
+    switches[EXPERT_MODE].tuneId = TUNE_TAP_CASUAL;
+    switches[EXPERT_MODE].token = EXPERT_MODE_TOKEN;
+
+#ifdef APP_BLINDSIGN_MODE_ENABLED
+    switches[BLINDSIGN_MODE].initState = app_mode_blindsign();
+    switches[BLINDSIGN_MODE].text = "Blind sign";
+    switches[BLINDSIGN_MODE].subText = "";
+    switches[BLINDSIGN_MODE].tuneId = TUNE_TAP_CASUAL;
+    switches[BLINDSIGN_MODE].token = BLINDSIGN_MODE_TOKEN;
+#endif
+
+#ifdef APP_ACCOUNT_MODE_ENABLED
+    if (app_mode_expert() || app_mode_account()) {
+        switches[ACCOUNT_MODE].initState = app_mode_account();
+        switches[ACCOUNT_MODE].text = "Crowdloan account";
+        switches[ACCOUNT_MODE].subText = "";
+        switches[ACCOUNT_MODE].tuneId = TUNE_TAP_CASUAL;
+        switches[ACCOUNT_MODE].token = ACCOUNT_MODE_TOKEN;
+    }
+#endif
+
+#ifdef APP_SECRET_MODE_ENABLED
+    if (app_mode_expert() || app_mode_secret()) {
+        switches[SECRET_MODE].initState = app_mode_secret();
+        switches[SECRET_MODE].text = "Secret mode";
+        switches[SECRET_MODE].subText = "";
+        switches[SECRET_MODE].tuneId = TUNE_TAP_CASUAL;
+        switches[SECRET_MODE].token = SECRET_MODE_TOKEN;
+    }
+#endif
+
+    content->type = SWITCHES_LIST;
+    content->content.switchesList.nbSwitches = SETTINGS_SWITCHES_NB_LEN;
+    content->content.switchesList.switches = switches;
+    content->contentActionCallback = settings_toggle_callback;
 }
 
 void view_idle_show_impl(__Z_UNUSED uint8_t item_idx, const char *statusString) {
@@ -353,8 +336,17 @@ void view_idle_show_impl(__Z_UNUSED uint8_t item_idx, const char *statusString) 
     } else {
         snprintf(viewdata.key, MAX_CHARS_PER_KEY_LINE, "%s", statusString);
     }
-    const bool settings_icon = true;
-    nbgl_useCaseHome(MENU_MAIN_APP_LINE1, &C_icon_stax_64, home_text, settings_icon, setting_screen, app_quit);
+
+    settingContents.callbackCallNeeded = true;
+    settingContents.nbContents = SETTING_CONTENTS_NB;
+    settingContents.contentGetterCallback = settings_screen_callback;
+
+    infoList.nbInfos = INFO_LIST_SIZE;
+    infoList.infoContents = INFO_VALUES_PAGE;
+    infoList.infoTypes = INFO_KEYS_PAGE;
+
+    nbgl_useCaseHomeAndSettings(MENU_MAIN_APP_LINE1, &C_icon_stax_64, home_text, INIT_HOME_PAGE, &settingContents,
+                                &infoList, NULL, app_quit);
 }
 
 void view_message_impl(const char *title, const char *message) {
@@ -448,9 +440,15 @@ static void config_useCaseReview(nbgl_operationType_t type) {
     pairList.pairs = NULL;  // to indicate that callback should be used
     pairList.callback = update_item_callback;
     pairList.startIndex = 0;
-
-    nbgl_useCaseReview(type, &pairList, &C_icon_stax_64, (intro_message == NULL ? "Review transaction" : intro_message),
-                       NULL, APPROVE_LABEL_NBGL, reviewTransactionChoice);
+    if (app_mode_blindsign_required()) {
+        nbgl_useCaseReviewBlindSigning(type, &pairList, &C_icon_stax_64,
+                                       (intro_message == NULL ? "Review transaction" : intro_message), NULL,
+                                       "Accept risk and sign transaction ?", NULL, reviewTransactionChoice);
+    } else {
+        nbgl_useCaseReview(type, &pairList, &C_icon_stax_64,
+                           (intro_message == NULL ? "Review transaction" : intro_message), NULL, APPROVE_LABEL_NBGL,
+                           reviewTransactionChoice);
+    }
 }
 
 static void config_useCaseReviewLight(const char *title, const char *validate) {

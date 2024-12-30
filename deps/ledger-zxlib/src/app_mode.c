@@ -19,6 +19,7 @@
 typedef struct {
     uint8_t expert;
     uint8_t account;
+    uint8_t blindsign;
 } app_mode_persistent_t;
 
 typedef struct {
@@ -27,6 +28,8 @@ typedef struct {
 } app_mode_temporary_t;
 
 app_mode_temporary_t app_mode_temporary;
+
+uint8_t blindsign_required;
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || \
     defined(TARGET_FLEX)
@@ -50,6 +53,7 @@ void app_mode_set_expert(uint8_t val) {
     app_mode_persistent_t mode;
     mode.expert = val;
     mode.account = N_appmode.account;
+    mode.blindsign = N_appmode.blindsign;
     MEMCPY_NV((void *)PIC(&N_appmode_impl), (void *)&mode, sizeof(app_mode_persistent_t));
 }
 
@@ -57,9 +61,29 @@ void app_mode_set_account(uint8_t val) {
     app_mode_persistent_t mode;
     mode.expert = N_appmode.expert;
     mode.account = val;
+    mode.blindsign = N_appmode.blindsign;
     MEMCPY_NV((void *)PIC(&N_appmode_impl), (void *)&mode, sizeof(app_mode_persistent_t));
 }
 
+bool app_mode_blindsign() {
+    if (N_appmode.blindsign) {
+        blindsign_required = 1;
+    }
+    return N_appmode.blindsign;
+}
+
+void app_mode_set_blindsign(uint8_t val) {
+    app_mode_persistent_t mode;
+    mode.expert = N_appmode.expert;
+    mode.account = N_appmode.account;
+    mode.blindsign = val;
+    blindsign_required = val;
+    MEMCPY_NV((void *)PIC(&N_appmode_impl), (void *)&mode, sizeof(app_mode_persistent_t));
+}
+
+bool app_mode_blindsign_required() { return blindsign_required; }
+
+void app_mode_skip_blindsign_ui() { blindsign_required = 0; }
 #else
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -71,8 +95,10 @@ app_mode_persistent_t app_mode;
 void app_mode_reset() {
     app_mode.expert = 0;
     app_mode.account = 0;
+    app_mode.blindsign = 0;
     app_mode_temporary.secret = 0;
     app_mode_temporary.shortcut = 0;
+    blindsign_required = 0;
 }
 
 bool app_mode_expert() { return app_mode.expert; }
@@ -82,6 +108,22 @@ bool app_mode_account() { return app_mode.account; }
 void app_mode_set_expert(uint8_t val) { app_mode.expert = val; }
 
 void app_mode_set_account(uint8_t val) { app_mode.account = val; }
+
+bool app_mode_blindsign() {
+    if (app_mode.blindsign) {
+        blindsign_required = 1;
+    }
+    return app_mode.blindsign;
+}
+
+void app_mode_set_blindsign(uint8_t val) {
+    app_mode.blindsign = val;
+    blindsign_required = val;
+}
+
+bool app_mode_blindsign_required() { return blindsign_required; }
+
+void app_mode_skip_blindsign_ui() { blindsign_required = 0; }
 
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
