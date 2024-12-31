@@ -38,7 +38,7 @@ zxerr_t account_enabled();
 #define APPROVE_LABEL_NBGL_GENERIC "Accept operation?"
 #define CANCEL_LABEL "Cancel"
 #define VERIFY_TITLE_LABEL_GENERIC "Verify operation"
-#define INFO_LIST_SIZE 4
+#define INFO_LIST_SIZE 2
 #define SETTING_CONTENTS_NB 1
 static const char HOME_TEXT[] =
     "This application enables\nsigning transactions on the\n" MENU_MAIN_APP_LINE1 " network";
@@ -96,8 +96,8 @@ static void h_view_address(void);
 #define MAX_INFO_LIST_ITEM_PER_PAGE 2
 #endif
 
-static const char *const INFO_KEYS_PAGE[] = {"Version", "Developed by", "Website", "License"};
-static const char *const INFO_VALUES_PAGE[] = {APPVERSION, "Zondax AG", "https://zondax.ch", "Apache 2.0"};
+static const char *const INFO_KEYS_PAGE[] = {"Version", "License"};
+static const char *const INFO_VALUES_PAGE[] = {APPVERSION, "Apache 2.0"};
 
 static const char SHOW_STORED_PUBKEY_TEXT[] = "Show address";
 

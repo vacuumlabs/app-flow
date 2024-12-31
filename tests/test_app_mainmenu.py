@@ -81,7 +81,9 @@ def test_app_mainmenu(firmware, backend, navigator, test_name):
             NavInsID.USE_CASE_REVIEW_TAP,
             NavInsID.USE_CASE_REVIEW_TAP,
             NavInsID.USE_CASE_ADDRESS_CONFIRMATION_CONFIRM,
-            NavInsID.USE_CASE_SETTINGS_MULTI_PAGE_EXIT
+            NavInsID.USE_CASE_SETTINGS_MULTI_PAGE_EXIT,
+            NavInsID.USE_CASE_HOME_SETTINGS,
+            NavInsID.USE_CASE_SETTINGS_NEXT,
         ]
 
     part += 1
