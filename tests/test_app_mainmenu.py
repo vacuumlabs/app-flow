@@ -10,6 +10,7 @@ def test_app_mainmenu(firmware, backend, navigator, test_name):
     """ Check the behavior of the device main menu """
 
     client = FlowCommandSender(backend)
+    choiceIdShowAdderess = 5 if firmware.device == "stax" else 4;
 
     # Navigate in the main menu, click "View address"
     if firmware.device == "nanos":
@@ -41,10 +42,7 @@ def test_app_mainmenu(firmware, backend, navigator, test_name):
         ]
     else:
         instructions = [
-            NavInsID.USE_CASE_HOME_SETTINGS,
-            NavInsID.USE_CASE_SETTINGS_NEXT,
-            NavInsID.USE_CASE_SETTINGS_NEXT,
-            NavInsID.USE_CASE_CHOICE_CONFIRM,
+            NavIns(NavInsID.CHOICE_CHOOSE, [choiceIdShowAdderess]),
             NavInsID.USE_CASE_REVIEW_TAP,
             NavInsID.USE_CASE_ADDRESS_CONFIRMATION_CONFIRM,
             NavInsID.USE_CASE_SETTINGS_MULTI_PAGE_EXIT
@@ -79,10 +77,7 @@ def test_app_mainmenu(firmware, backend, navigator, test_name):
         ]
     else:
         instructions = [
-            NavInsID.USE_CASE_HOME_SETTINGS,
-            NavInsID.USE_CASE_SETTINGS_NEXT,
-            NavInsID.USE_CASE_SETTINGS_NEXT,
-            NavInsID.USE_CASE_CHOICE_CONFIRM,
+            NavIns(NavInsID.CHOICE_CHOOSE, [choiceIdShowAdderess]),
             NavInsID.USE_CASE_REVIEW_TAP,
             NavInsID.USE_CASE_REVIEW_TAP,
             NavInsID.USE_CASE_ADDRESS_CONFIRMATION_CONFIRM,

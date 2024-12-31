@@ -24,6 +24,7 @@
 #include "nbgl_use_case.h"
 #include "ux.h"
 #include "view_internal.h"
+#include "menu_handler.h"
 
 #ifdef APP_SECRET_MODE_ENABLED
 zxerr_t secret_enabled();
@@ -87,6 +88,8 @@ static void h_reject_internal(void) { h_reject(review_type); }
 
 static void h_approve_internal(void) { h_approve(review_type); }
 
+static void h_view_address(void);
+
 #ifdef TARGET_STAX
 #define MAX_INFO_LIST_ITEM_PER_PAGE 3
 #else  // TARGET_FLEX
@@ -96,8 +99,11 @@ static void h_approve_internal(void) { h_approve(review_type); }
 static const char *const INFO_KEYS_PAGE[] = {"Version", "Developed by", "Website", "License"};
 static const char *const INFO_VALUES_PAGE[] = {APPVERSION, "Zondax AG", "https://zondax.ch", "Apache 2.0"};
 
+static const char SHOW_STORED_PUBKEY_TEXT[] = "Show address";
+
 static nbgl_contentInfoList_t infoList = {0};
 static nbgl_genericContents_t settingContents = {0};
+static nbgl_homeAction_t showStoredPubkey = {};
 static nbgl_contentSwitch_t switches[SETTINGS_SWITCHES_NB_LEN];
 
 static void h_expert_toggle() { app_mode_set_expert(!app_mode_expert()); }
@@ -345,8 +351,13 @@ void view_idle_show_impl(__Z_UNUSED uint8_t item_idx, const char *statusString) 
     infoList.infoContents = INFO_VALUES_PAGE;
     infoList.infoTypes = INFO_KEYS_PAGE;
 
+    showStoredPubkey.text = SHOW_STORED_PUBKEY_TEXT;
+    showStoredPubkey.icon = NULL;
+    showStoredPubkey.callback =  h_view_address;
+    showStoredPubkey.style = SOFT_HOME_ACTION;
+
     nbgl_useCaseHomeAndSettings(MENU_MAIN_APP_LINE1, &C_icon_stax_64, home_text, INIT_HOME_PAGE, &settingContents,
-                                &infoList, NULL, app_quit);
+                                &infoList, &showStoredPubkey, app_quit);
 }
 
 void view_message_impl(const char *title, const char *message) {
@@ -503,6 +514,10 @@ void view_review_show_impl(unsigned int requireReply, const char *title, const c
             config_useCaseReview(TYPE_TRANSACTION);
             break;
     }
+}
+
+static void h_view_address() {
+    handleMenuShowAddress();
 }
 
 #endif
